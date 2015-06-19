@@ -641,7 +641,7 @@ function useAutoBadgePurchase() {
 	if(likeNewOn100 == 1){
 		var abilityPriorityList = [
 			{ id: ABILITIES.WORMHOLE,   ratio: 0.5 },
-			{ id: ABILITIES.LIKE_NEW,   ratio: 0.5 },
+			{ id: ABILITIES.LIKE_NEW,   ratio: 1 },
 			{ id: ABILITIES.CRIT,       ratio: 1 },
 			{ id: ABILITIES.TREASURE,   ratio: 1 },
 			{ id: ABILITIES.PUMPED_UP,  ratio: 1 },
