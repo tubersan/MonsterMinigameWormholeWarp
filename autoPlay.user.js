@@ -6,17 +6,17 @@
 // @match *://steamcommunity.com/minigame/towerattack*
 // @match *://steamcommunity.com//minigame/towerattack*
 // @grant       GM_xmlhttpRequest
-// @updateURL https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/team-like-newers/autoPlay.user.js
-// @downloadURL https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/team-like-newers/autoPlay.user.js
+// @updateURL https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/master/autoPlay.user.js
+// @downloadURL https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/master/autoPlay.user.js
 // ==/UserScript==
 
 (function(x) {
 
 // Options
 var old_version = false;
-var update_json_url = 'https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/team-like-newers/version.json';
-var script_url = 'https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/team-like-newers/autoplay.noUpdate.user.js';
-var loader_version = '5.0.2';
+var update_json_url = 'https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/master/version.json';
+var script_url = 'https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/master/autoplay.noUpdate.user.js';
+var loader_version = '5.0.1.13';
 
 // Load the actual script
 GM_xmlhttpRequest ({
