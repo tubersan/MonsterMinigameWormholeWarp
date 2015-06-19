@@ -2,7 +2,7 @@
 // @name Ye Olde Megajump
 // @namespace https://github.com/YeOldeWH/MonsterMinigameWormholeWarp
 // @description A script that runs the Steam Monster Minigame for you.  Now with megajump.  Brought to you by the Ye Olde Wormhole Schemers and DannyDaemonic
-// @version 6.0.1
+// @version 6.0.2
 // @match *://steamcommunity.com/minigame/towerattack*
 // @match *://steamcommunity.com//minigame/towerattack*
 // @grant none
@@ -24,6 +24,7 @@ var likeNewOn100 = 1;
 var medicOn100 = 1;
 var clicksOnBossLevel = 0;
 var upgThreshold = 100;
+var minAbilityUsePercent = 0.3;
 
 var enableAutoClicker = true;
 
@@ -1905,19 +1906,25 @@ function tryUsingAbility(itemId, checkInLane, forceAbility) {
 	var level = getGameLevel();
 	var needs_to_be_blocked = false;
 	var two_digit_level = level % 100;
-	
+
 	var needs_to_be_blocked = (BOSS_DISABLED_ABILITIES.indexOf(itemId) != -1);
-	
+
 	// must not use any damaging ability on boss levels
 	if (two_digit_level == 0 && needs_to_be_blocked) {
 		return false;
 
 	// Randomly Don't use this ability when we're getting close to the boss
 	// This avoids overflow damage 
-	} else if (two_digit_level > 90
-				&& needs_to_be_blocked
-				&& Math.random() < 0.8){
-		return false;
+	} else if (two_digit_level > 50 && needs_to_be_blocked) {
+		// Calculate current ability usage rate
+		var nextTickLevel = Math.ceil(level + levelsPerSec());
+		var nextWHLevel = Math.ceil(nextTickLevel / 100)*100;
+		var abilityRate = Math.min( 1, Math.sqrt( nextWHLevel - nextTickLevel )/10 + minAbilityUsePercent );
+
+		if( Math.random() < (1 - abilityRate) ) {
+			advLog('Rate limited ability - not using');
+			return false;
+		}
 	}
 	
 	triggerAbility(itemId);
