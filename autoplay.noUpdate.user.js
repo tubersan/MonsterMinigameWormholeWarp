@@ -401,6 +401,7 @@ function firstRun() {
 	ab_box.appendChild(lock_elements_box);
 
 	enhanceTooltips();
+	addIRCLink();
 
 	isPastFirstRun = true;
 }
@@ -2245,6 +2246,26 @@ function appendBreadcrumbsTitleInfo() {
 		element.innerHTML = '<a target="_blank"  href="' + GM_info.script.namespace + '">' + GM_info.script.name + ' v' + GM_info.script.version + '</a>';
 		breadcrumbs.appendChild(element);
 	}
+}
+
+function addIRCLink() {
+	//Add in IRC link
+	$J("#row_bottom").append('<div id="irc_join"></div>');
+	
+	$J("#irc_join").css({
+		"width": "525px",
+		"height": "56px",
+		"position": "absolute",
+		"bottom": "0px",
+		"right": "0px",
+		"z-index": "12",
+		"cursor": "pointer",
+	});
+	
+	$J("#irc_join").click(function(e) {
+		e.stopPropagation();
+		window.open('http://irc.lc/quakenet/YeOldeWH','_blank'); // Cant seem to find a local storing in js of the players username, so lets just take it from the dropdown
+	});
 }
 
 function updateLevelInfoTitle(level)
