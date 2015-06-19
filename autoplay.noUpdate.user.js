@@ -2236,6 +2236,15 @@ function appendBreadcrumbsTitleInfo() {
 	element.textContent = 'Remaining Time: 0 hours, 0 minutes.';
 	breadcrumbs.appendChild(element);
 	ELEMENTS.RemainingTime = element;
+	
+	if (typeof GM_info != 'undefined') {
+		element = document.createElement('span');
+		element.style.cssFloat = 'right';
+		element.style.color = '#D4E157';
+		element.style.textShadow = '1px 1px 0px rgba( 0, 0, 0, 0.3 )';
+		element.innerHTML = '<a target="_blank"  href="' + GM_info.script.namespace + '">' + GM_info.script.name + ' v' + GM_info.script.version + '</a>';
+		breadcrumbs.appendChild(element);
+	}
 }
 
 function updateLevelInfoTitle(level)
