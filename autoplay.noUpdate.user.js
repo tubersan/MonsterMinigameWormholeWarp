@@ -2,7 +2,7 @@
 // @name Ye Olde Megajump
 // @namespace https://github.com/YeOldeWH/MonsterMinigameWormholeWarp
 // @description A script that runs the Steam Monster Minigame for you.  Now with megajump.  Brought to you by the Ye Olde Wormhole Schemers and DannyDaemonic
-// @version 5.0.1.14
+// @version 5.0.1.15
 // @match *://steamcommunity.com/minigame/towerattack*
 // @match *://steamcommunity.com//minigame/towerattack*
 // @grant none
@@ -627,21 +627,31 @@ function useAutoBadgePurchase() {
 	//For now, this is not a problem, but for stylistic reasons, should eventually be changed.
 	
 	//Regular users buy ratio
-	if(likeNewOn100 != 1){
+	
+	
+	if (likeNewOn100 == 1 && wormholeOn100 == 1) {
+		// High Level, "Waste Not" Users
 		var abilityPriorityList = [
-			{ id: ABILITIES.WORMHOLE,   ratio: 1 },
-			{ id: ABILITIES.LIKE_NEW,   ratio: 0 },
+			{ id: ABILITIES.WORMHOLE,   ratio: 0.5 },
+			{ id: ABILITIES.LIKE_NEW,   ratio: 1 },
 			{ id: ABILITIES.CRIT,       ratio: 1 },
 			{ id: ABILITIES.TREASURE,   ratio: 1 },
 			{ id: ABILITIES.PUMPED_UP,  ratio: 1 },
 		];
-	}
-	
-	//Like New users buy ratio
-	if(likeNewOn100 == 1){
+	} else if (likeNewOn100 == 1) {
+		// Like New Buyers
 		var abilityPriorityList = [
-			{ id: ABILITIES.WORMHOLE,   ratio: 0.5 },
+			{ id: ABILITIES.WORMHOLE,   ratio: 0 },
 			{ id: ABILITIES.LIKE_NEW,   ratio: 1 },
+			{ id: ABILITIES.CRIT,       ratio: 1 },
+			{ id: ABILITIES.TREASURE,   ratio: 1 },
+			{ id: ABILITIES.PUMPED_UP,  ratio: 1 },
+		];
+	} else {
+		// Regular User Buy Ratio
+		var abilityPriorityList = [
+			{ id: ABILITIES.WORMHOLE,   ratio: 1 },
+			{ id: ABILITIES.LIKE_NEW,   ratio: 0 },
 			{ id: ABILITIES.CRIT,       ratio: 1 },
 			{ id: ABILITIES.TREASURE,   ratio: 1 },
 			{ id: ABILITIES.PUMPED_UP,  ratio: 1 },
