@@ -652,56 +652,67 @@ function MainLoop() {
 	}
 }
 
+// checks the amount of items that are still usable in the round
+// THIS ASSUMES NO COOLDOWN, OR A CONSTANT SUPPLY OF LNs, AS IT IS A THEORETICAL MAX
+function maxItemsStillUsable(abilityID, usagePct) {
+	var maxItemUsePerSec = 1.75; // Estimated number of wormholes usable by client in a second
+	
+	return Math.floor(maxItemUsePerSec * usagePct * getSecondsRemaining());
+}
+
+function getBuyCount(abilityID, usagePct) {
+	var badgePoints = s().m_rgPlayerTechTree.badge_points;
+	
+	return Math.min(
+		parseInt(badgePoints / s().m_rgTuningData.abilities[ABILITIES.WORMHOLE].badge_points_cost),
+		maxItemsStillUsable(abilityID, usagePct)
+	);
+}
+
 function useAutoBadgePurchase() {
 	if(!enableAutoBadgePurchase) { return; }
-
+	
+	var badgePoints = s().m_rgPlayerTechTree.badge_points;
+	
+	// Attempt to automatically determine if a user should be a LN
+	var maxUsableWormholes = maxItemsStillUsable(ABILITIES.WORMHOLE, 0.2); // Currently, this is 30240 WHs on Round start, and decreases over time
+	
+	//If you can buy more than the number of usable wormholes, toggle the LNUser flag
+	if(badgePoints > abilityData[ABILITIES.WORMHOLE].badge_points_cost * maxUsableWormholes)
+		likeNewOn100 = 1;
+	
 	// id = ability
-	// ratio = how much of the remaining badges to spend
+	// usagePct = percent of time this ability will be spammed.
 	
 	//Note: this isn't an actual ratio, because badge points get reduced and the values don't add to 1
 	//For now, this is not a problem, but for stylistic reasons, should eventually be changed.
 	
-	//Regular users buy ratio
-	if(likeNewOn100 != 1){
-		var abilityPriorityList = [
-			{ id: ABILITIES.WORMHOLE,   ratio: 1 },
-			{ id: ABILITIES.LIKE_NEW,   ratio: 0 },
-			{ id: ABILITIES.CRIT,       ratio: 1 },
-			{ id: ABILITIES.TREASURE,   ratio: 1 },
-			{ id: ABILITIES.PUMPED_UP,  ratio: 1 },
-		];
-	}
+	var abilityPriorityList = [
+		{ id: ABILITIES.WORMHOLE,	usagePct: 0.2 },
+		{ id: ABILITIES.LIKE_NEW,	usagePct:  0.2 },
+		{ id: ABILITIES.CRIT,		usagePct: 1 },
+		{ id: ABILITIES.TREASURE,	usagePct: 1 },
+		{ id: ABILITIES.PUMPED_UP,	usagePct: 1 },
+	];
 	
-	//Like New users buy ratio
-	if(likeNewOn100 == 1){
-		var abilityPriorityList = [
-			{ id: ABILITIES.WORMHOLE,   ratio: 0 },
-			{ id: ABILITIES.LIKE_NEW,   ratio: 1 },
-			{ id: ABILITIES.CRIT,       ratio: 1 },
-			{ id: ABILITIES.TREASURE,   ratio: 1 },
-			{ id: ABILITIES.PUMPED_UP,  ratio: 1 },
-		];
-	}
-	
-	var badgePoints = s().m_rgPlayerTechTree.badge_points;
 	var abilityData = s().m_rgTuningData.abilities;
 	var abilityPurchaseQueue = [];
 
 	for (var i = 0; i < abilityPriorityList.length; i++) {
 		var id = abilityPriorityList[i].id;
-		var ratio = abilityPriorityList[i].ratio;
-		var cost = abilityData[id].badge_points_cost;
-		var portion = parseInt(badgePoints * ratio);
-		badgePoints -= portion;
-
-		while(portion >= cost) {
+		var usagePct = abilityPriorityList[i].usagePct;
+		
+		var toBuyCount = getBuyCount(id, usagePct); 
+		
+		// Buy the item the specified number of times
+		for(var j=0; j < toBuyCount; i++ )
 			abilityPurchaseQueue.push(id);
-			portion -= cost;
-		}
-
-		badgePoints += portion;
+		
+		// Decrement our badge points remaining
+		badgePoints -= toBuyCount * abilityData[id].badge_points_cost;
 	}
 
+	//apply the purchase queue we just made
 	s().m_rgPurchaseItemsQueue = s().m_rgPurchaseItemsQueue.concat(abilityPurchaseQueue);
 	s().m_UI.UpdateSpendBadgePointsDialog();
 }
