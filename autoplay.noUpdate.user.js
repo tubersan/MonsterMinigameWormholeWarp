@@ -447,17 +447,13 @@ function disableParticles() {
 	}
 }
 
-function getTimeleft() {
-	var cTime = new Date();
-	var cHours = cTime.getUTCHours();
-	var cMins = cTime.getUTCMinutes();
-	var timeLeft = 60 - cMins;
+function getSecondsRemaining() {
+	var now = new Date();
+	var endDate = getEndDate();
+	
+	var diff = endDate.getTime() - now.getTime();
 
-	if (cHours == 15) {
-		return timeLeft;
-	}
-
-	return 61;
+	return diff / 1000;
 }
 
 function updateLevelTimeTracker() {
@@ -529,11 +525,8 @@ function MainLoop() {
 			w.SteamDB_Wormhole_Timer = false;
 		}
 
-		var timeLeft = getTimeleft(); // Time left in minutes
 		if(level % 100 == 0){
 			useAbilitiesAt100();
-		} else if(timeLeft <= 15) {
-			useAllAbilities();
 		} else {
 			useAbilities(level);
 		}
@@ -723,6 +716,8 @@ function toggleAutoBadgePurchase(event) {
 	enableAutoBadgePurchase = value;
 }
 
+/*
+// NOTE: THIS IS NEVER CALLED ANYMORE, AS IT IS DETRIMENTAL TO WORMHOLE STRATS
 function useAllAbilities() {
 	for(var key in ABILITIES) {
 		if(ABILITIES[key] == ABILITIES.WORMHOLE) { continue; }
@@ -730,6 +725,7 @@ function useAllAbilities() {
 		tryUsingAbility(ABILITIES[key]);
 	}
 }
+*/
 
 function isBossLevel(level) {
 	return level % 100 === 0
