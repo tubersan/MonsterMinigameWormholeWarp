@@ -16,7 +16,7 @@
 var old_version = false;
 var update_json_url = 'https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/master/version.json';
 var script_url = 'https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/master/autoplay.noUpdate.user.js';
-var loader_version = '5.0.1.13';
+var loader_version = '5.0.2';
 
 // Load the actual script
 GM_xmlhttpRequest ({
