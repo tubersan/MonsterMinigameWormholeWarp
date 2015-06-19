@@ -19,7 +19,7 @@
 var clickRate = 20;
 var logLevel = 1; // 5 is the most verbose, 0 disables all log
 
-var wormholeOn100 = 0;
+var wormholeOn100 = 1;
 var likeNewOn100 = 1;
 var medicOn100 = 1;
 var clicksOnBossLevel = 0;
@@ -640,8 +640,8 @@ function useAutoBadgePurchase() {
 	//Like New users buy ratio
 	if(likeNewOn100 == 1){
 		var abilityPriorityList = [
-			{ id: ABILITIES.WORMHOLE,   ratio: 0 },
-			{ id: ABILITIES.LIKE_NEW,   ratio: 1 },
+			{ id: ABILITIES.WORMHOLE,   ratio: 0.5 },
+			{ id: ABILITIES.LIKE_NEW,   ratio: 0.5 },
 			{ id: ABILITIES.CRIT,       ratio: 1 },
 			{ id: ABILITIES.TREASURE,   ratio: 1 },
 			{ id: ABILITIES.PUMPED_UP,  ratio: 1 },
