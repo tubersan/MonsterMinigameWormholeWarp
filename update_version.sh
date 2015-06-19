@@ -14,7 +14,7 @@ OLD_VERSION=`cat $SCRIPT | grep "// \@version" | awk '{print $3}'`
 
 # If a version is specified, make sure it's valid
 if [[ $# -eq 1 ]]; then
-	if [[ "$1" =~ ^[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+$ ]]; then
+	if [[ "$1" =~ ^[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+$ ]]; then
 		NEW_VERSION=$1
 	else
 		echo "Invalid version \"$1\"."
@@ -32,8 +32,8 @@ echo "New Version: $NEW_VERSION"
 # Replace the occurrances in the .js file
 OLD_REGEX=`echo $OLD_VERSION | sed 's/\./\\\\./g'`
 NEW_REGEX=`echo $NEW_VERSION | sed 's/\./\\\\./g'`
-sed -i '' "s/$OLD_REGEX/$NEW_REGEX/g" $SCRIPT
-sed -i '' "s/$OLD_REGEX/$NEW_REGEX/g" $LOADER
+sed -i "s/$OLD_REGEX/$NEW_REGEX/g" $SCRIPT
+sed -i "s/$OLD_REGEX/$NEW_REGEX/g" $LOADER
 
 cat << EOF > version.json
 {

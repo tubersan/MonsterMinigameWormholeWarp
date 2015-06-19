@@ -2,7 +2,7 @@
 // @name Ye Olde Megajump (Auto-updating)
 // @namespace https://github.com/YeOldeWH/MonsterMinigameWormholeWarp
 // @description A script that runs the Steam Monster Minigame for you.  Now with megajump.  Brought to you by the Ye Olde Wormhole Schemers and DannyDaemonic
-// @version 5.0.1.13
+// @version 5.0.2
 // @match *://steamcommunity.com/minigame/towerattack*
 // @match *://steamcommunity.com//minigame/towerattack*
 // @grant       GM_xmlhttpRequest
@@ -16,7 +16,7 @@
 var old_version = false;
 var update_json_url = 'https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/team-like-newers/version.json';
 var script_url = 'https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/team-like-newers/autoplay.noUpdate.user.js';
-var loader_version = '5.0.1.13';
+var loader_version = '5.0.2';
 
 // Load the actual script
 GM_xmlhttpRequest ({

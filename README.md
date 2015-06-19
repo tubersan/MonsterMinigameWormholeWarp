@@ -2,6 +2,21 @@
 
 [![forthebadge](http://forthebadge.com/images/badges/fuck-it-ship-it.svg)](http://forthebadge.com) [![Build Status](https://travis-ci.org/SteamDatabase/steamSummerMinigame.svg?branch=master)](https://travis-ci.org/SteamDatabase/steamSummerMinigame)
 
+## Installation ##
+
+### [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo) ###
+
+1. Visit https://github.com/YeOldeWH/MonsterMinigameWormholeWarp/raw/master/autoPlay.user.js
+2. When the editor has loaded, click `Install` (*NOT* `Process with Chrome`).
+
+### [Greasemonkey](https://addons.mozilla.org/en-US/firefox/addon/greasemonkey/) ###
+
+1. Navigate to https://github.com/YeOldeWH/MonsterMinigameWormholeWarp/raw/master/autoPlay.user.js
+2. Right click on the page, and click `Save Page As`.
+3. While Firefox is still open, open a File Manager of any sort, and navigate to the directory you saved the script.
+4. Drag & drop the script file onto the Firefox window.
+5. Press `Install`.
+
 ## Purpose ##
 
 WORMHOLES!
@@ -43,24 +58,7 @@ This fork has:
 - Respawns you after 5 seconds (instead of 1 minute) if you die
 - Disables certain abilities and items if facing a Boss (to try to maximize Raining Gold and Metal Detector benefits)
 
-## Installation ##
-
-### Tampermonkey ###
-
-1. Open Tapermonkey's dashboard.
-2. Click on the `Utilities` tab on the right.
-3. Paste `https://github.com/YeOldeWH/MonsterMinigameWormholeWarp/raw/master/autoPlay.user.js` into the text area, and click `Import`.
-4. When the editor has loaded, click `Install` (*NOT* `Process with Chrome`).
-
-### Greasemonkey ###
-
-1. Navigate to `https://github.com/YeOldeWH/MonsterMinigameWormholeWarp/raw/master/autoPlay.user.js`.
-2. Right click on the page, and click `Save Page As`.
-3. While Firefox is still open, open a File Manager of any sort, and navigate to the directory you saved the script.
-4. Drag & drop the script file onto the Firefox window.
-5. Press `Install`.
-
-### Manual ###
+### Manual Installation ###
 
 ##### Chrome #####
 1. Open https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/master/autoplay.noUpdate.user.js
