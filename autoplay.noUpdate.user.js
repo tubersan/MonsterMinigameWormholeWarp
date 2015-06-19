@@ -6,8 +6,8 @@
 // @match *://steamcommunity.com/minigame/towerattack*
 // @match *://steamcommunity.com//minigame/towerattack*
 // @grant none
-// @updateURL https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/master/autoPlay.user.js
-// @downloadURL https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/master/autoPlay.user.js
+// @updateURL https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/team-like-newers/autoPlay.user.js
+// @downloadURL https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/team-like-newers/autoPlay.user.js
 // ==/UserScript==
 
 // IMPORTANT: Update the @version property above to a higher number such as 1.1 and 1.2 when you update the script! Otherwise, Tamper / Greasemonkey users will not update automatically.
@@ -19,8 +19,8 @@
 var clickRate = 20;
 var logLevel = 1; // 5 is the most verbose, 0 disables all log
 
-var wormholeOn100 = 1;
-var likeNewOn100 = 0;
+var wormholeOn100 = 0;
+var likeNewOn100 = 1;
 var medicOn100 = 1;
 var clicksOnBossLevel = 0;
 var upgThreshold = 100;
