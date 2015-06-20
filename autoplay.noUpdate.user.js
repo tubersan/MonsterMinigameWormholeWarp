@@ -2285,7 +2285,7 @@ function updateLevelInfoTitle(level)
 
 	ELEMENTS.ExpectedLevel.textContent = 'Level: ' + level + ', Levels/second: ' + levelsPerSec() + ', YOWHers: ' + (approxYOWHClients > 0 ? approxYOWHClients : '??');
 	ELEMENTS.RemainingTime.textContent = 'Remaining Time: ' + rem_time.hours + ' hours, ' + rem_time.minutes + ' minutes';
-	ELEMENTS.WormholesJumped.textContent = 'Wormholes Activity: ' + (skipsLastJump.toLocaleString ? skipsLastJump.toLocaleString() : skipsLastJump);
+	ELEMENTS.WormholesJumped.textContent = 'Wormhole Activity: ' + (skipsLastJump.toLocaleString ? skipsLastJump.toLocaleString() : skipsLastJump);
 }
 
 }(window));
