@@ -249,9 +249,9 @@ function firstRun() {
 		// Page content
 		".pagecontent {padding: 0}",
 		// Align abilities to the left
-		"#abilitiescontainer {text-align: left;}",
+		"#abilitiescontainer {text-align: left; padding-left: 10px;}",
 		// Activitylog and ability list
-		"#activeinlanecontainer:hover {height: auto; background: rgba(50,50,50,0.9); padding-bottom: 10px; position:absolute; z-index: 1;}",
+		"#activeinlanecontainer:hover {height: auto; background-image: radial-gradient(circle farthest-corner at 32px 0px, rgba(0,124,182,0.1), #11111C); padding-bottom: 10px; position:absolute; z-index: 1;}",
 		"#activeinlanecontainer:hover + #activitylog {margin-top: 88px;}",
 		"#activitylog {margin-top: 20px}",
 		// Hide leave game button
@@ -273,10 +273,12 @@ function firstRun() {
 		// Breadcrumbs
 		".breadcrumbs {color: #bbb;}",
 		".bc_span {text-shadow: 1px 1px 0px rgba( 0, 0, 0, 0.3 );}",
-		".bc_room {color: #D4E157;}",
+		".bc_room {color: #ACE191;}",
 		".bc_level {color: #FFA07A;}",
 		".bc_time {color: #9AC0FF;}",
 		".bc_worms {color: #FFF79A;}",
+		// Upgrades and abilities are hard to see on new background
+		".upgrades {color: #67C;}",
 		// Always show ability count
 		".abilitytemplate > a > .abilityitemquantity {visibility: visible; pointer-events: none;}",
 		".tv_ui {background-image: url(http://i.imgur.com/vM1gTFY.gif);}",
