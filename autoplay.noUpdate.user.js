@@ -2514,6 +2514,16 @@ function appendBreadcrumbsTitleInfo() {
 	breadcrumbs.appendChild(element);
 	ELEMENTS.RemainingTime = element;
 	
+	element = document.createElement('span');
+	element.textContent = ' > ';
+	breadcrumbs.appendChild(element);
+
+	element = document.createElement('span');
+	element.className = "bc_span bc_worms";
+	element.textContent = 'Wormhole Activity: 0';
+	breadcrumbs.appendChild(element);
+	ELEMENTS.WormholesJumped = element;
+	
 	if (typeof GM_info != 'undefined') {
 		element = document.createElement('span');
 		element.style.cssFloat = 'right';
@@ -2595,16 +2605,6 @@ function addIRCLink() {
 		e.stopPropagation();
 		window.open('https://webchat.quakenet.org/?nick=' + getUserName() + '&channels=YeOldeWH','_blank'); // Cant seem to find a local storing in js of the players username, so lets just take it from the dropdown
 	});
-	
-	element = document.createElement('span');
-	element.textContent = ' > ';
-	breadcrumbs.appendChild(element);
-
-	element = document.createElement('span');
-	element.className = "bc_span bc_worms";
-	element.textContent = 'Wormhole Activity: 0';
-	breadcrumbs.appendChild(element);
-	ELEMENTS.WormholesJumped = element;
 }
 
 function updateLevelInfoTitle(level)
