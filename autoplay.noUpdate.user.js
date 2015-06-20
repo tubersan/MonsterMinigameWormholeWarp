@@ -2240,19 +2240,9 @@ function appendBreadcrumbsTitleInfo() {
 
 	element = document.createElement('span');
 	element.className = "bc_span bc_time";
-	element.textContent = 'Remaining Time: 0 hours, 0 minutes';
+	element.textContent = 'Remaining Time: 0 hours, 0 minutes.';
 	breadcrumbs.appendChild(element);
 	ELEMENTS.RemainingTime = element;
-	
-	element = document.createElement('span');
-	element.textContent = ' > ';
-	breadcrumbs.appendChild(element);
-
-	element = document.createElement('span');
-	element.className = "bc_span bc_worms";
-	element.textContent = 'Wormholes Last Jump: 0';
-	breadcrumbs.appendChild(element);
-	ELEMENTS.WormholesJumped = element;
 }
 
 function updateLevelInfoTitle(level)
@@ -2261,8 +2251,6 @@ function updateLevelInfoTitle(level)
 	var rem_time = countdown(exp_lvl.remaining_time);
 
 	ELEMENTS.ExpectedLevel.textContent = 'Level: ' + level + ', Levels/second: ' + levelsPerSec() + ', YOWHers: ' + (approxYOWHClients > 0 ? approxYOWHClients : '??');
-	ELEMENTS.RemainingTime.textContent = 'Remaining Time: ' + rem_time.hours + ' hours, ' + rem_time.minutes + ' minutes';
-	ELEMENTS.WormholesJumped.textContent = 'Wormholes Last Jump: ' + (skipsLastJump.toLocaleString ? skipsLastJump.toLocaleString() : skipsLastJump);
 }
 
 }(window));
