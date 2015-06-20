@@ -1,8 +1,8 @@
-// ==UserScript==
+			// ==UserScript==
 // @name Ye Olde Megajump
 // @namespace https://github.com/YeOldeWH/MonsterMinigameWormholeWarp
 // @description A script that runs the Steam Monster Minigame for you.  Now with megajump.  Brought to you by the Ye Olde Wormhole Schemers and DannyDaemonic
-// @version 6.0.7
+// @version 6.0.8
 // @match *://steamcommunity.com/minigame/towerattack*
 // @match *://steamcommunity.com//minigame/towerattack*
 // @grant none
@@ -164,7 +164,7 @@ var CONTROL = {
 	speedThreshold: 2000,
 	rainingRounds: 100,
 	disableGoldRainLevels: 500,
-	rainingSafeRounds: 10
+	rainingSafeRounds: 9
 };
 
 var GAME_STATUS = {
@@ -813,9 +813,15 @@ function useAbilitiesAt100() {
 	}
 	
 	//This should equate to approximately 1.8 Like News per second
-
+	if (likeNewOn100) {
+		advLog("At level % 100 = 0, forcing the use of a like new", 2);
 		tryUsingAbility(ABILITIES.LIKE_NEW, false, true); //like new
-	
+	} else {
+		// if people have LIKE_NEWs, there's no harm in letting them use them
+		if (Math.random() <= 0.05) {
+			tryUsingAbility(ABILITIES.LIKE_NEW, false, true);
+		}
+	}
 	
 	if (medicOn100) {
 		advLog("At level % 100 = 0, forcing the use of a medic", 2);
