@@ -448,6 +448,15 @@ function disableParticles() {
 	}
 }
 
+function getEndDate() {
+	var endDate = new Date();
+	if (endDate.getUTCHours() >= 16) {
+		endDate.setUTCDate(endDate.getUTCDate() + 1);
+	}
+	endDate.setUTCHours(16, 0, 0, 0);
+	return endDate;
+}
+
 function getSecondsRemaining() {
 	var now = new Date();
 	var endDate = getEndDate();
