@@ -1031,6 +1031,7 @@ function useAutoBadgePurchase() {
 		
 		// Decrement our badge points remaining
 		badgePoints -= toBuyCount * abilityData[id].badge_points_cost;
+		getScene().m_rgPlayerTechTree.badge_points = badgePoints;
 	}
 
 	//apply the purchase queue we just made
