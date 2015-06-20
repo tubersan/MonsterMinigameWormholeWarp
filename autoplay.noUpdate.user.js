@@ -2,7 +2,7 @@
 // @name Ye Olde Megajump
 // @namespace https://github.com/YeOldeWH/MonsterMinigameWormholeWarp
 // @description A script that runs the Steam Monster Minigame for you.  Now with megajump.  Brought to you by the Ye Olde Wormhole Schemers and DannyDaemonic
-// @version 6.1.1
+// @version 6.1.0
 // @match *://steamcommunity.com/minigame/towerattack*
 // @match *://steamcommunity.com//minigame/towerattack*
 // @grant none
@@ -54,6 +54,8 @@ var predictTicks = 0;
 var predictJumps = 0;
 var predictLastWormholesUpdate = 0;
 
+
+
 // DO NOT MODIFY
 var isPastFirstRun = false;
 var isAlreadyRunning = false;
@@ -67,6 +69,8 @@ var lastLevelTimeTaken = [{
 							timeTakenInSeconds: 0
 						 }];
 var approxYOWHClients = 0;
+var skipsLastJump = 0;
+var updateSkips = false;
 
 var trt_oldCrit = function() {};
 var trt_oldPush = function() {};
@@ -164,7 +168,7 @@ var CONTROL = {
 	speedThreshold: 2000,
 	rainingRounds: 100,
 	disableGoldRainLevels: 500,
-	rainingSafeRounds: 10
+	rainingSafeRounds: 9
 };
 
 var GAME_STATUS = {
@@ -249,7 +253,8 @@ function firstRun() {
 		// Align abilities to the left
 		"#abilitiescontainer {text-align: left;}",
 		// Activitylog and ability list
-		"#activeinlanecontainer:hover {height: auto; background: rgba(50,50,50,0.9); padding-bottom: 10px; position:absolute; z-index: 1;}",
+		"#activeinlanecontainer {padding-left: 10px;}",
+		"#activeinlanecontainer:hover {height: auto; background-image: radial-gradient(circle farthest-corner at 32px 0px, rgba(0,124,182,0.1), #11111C); padding-bottom: 10px; position:absolute; z-index: 1;}",
 		"#activeinlanecontainer:hover + #activitylog {margin-top: 88px;}",
 		"#activitylog {margin-top: 20px}",
 		// Hide leave game button
@@ -269,10 +274,16 @@ function firstRun() {
 		// Element lock box
 		".lock_elements_box {width: 165px; top: -76px; left: 303px; box-sizing: border-box; line-height: 1rem; padding: 7px 10px; position: absolute; color: #EDEDED;}",
 		// Breadcrumbs
+		".breadcrumbs {color: #bbb;}",
 		".bc_span {text-shadow: 1px 1px 0px rgba( 0, 0, 0, 0.3 );}",
-		".bc_room {color: #D4E157;}",
+		".bc_room {color: #ACE191;}",
 		".bc_level {color: #FFA07A;}",
 		".bc_time {color: #9AC0FF;}",
+		".bc_worms {color: #FFF79A;}",
+		// Adjustments for hard to see areas on the new background
+		"#upgradesscroll, #activityscroll {opacity: 0.75;}",
+		".teamhealth {background: rgba( 240, 240, 255, 0.2 );}",
+		"#upgrades .title_upgrates {color: #67C;}",
 		// Always show ability count
 		".abilitytemplate > a > .abilityitemquantity {visibility: visible; pointer-events: none;}",
 		".tv_ui {background-image: url(http://i.imgur.com/vM1gTFY.gif);}",
@@ -297,64 +308,10 @@ function firstRun() {
 		document.body.style.backgroundPosition = "0 0";
 	}
 
-	CUI.prototype.UpdateLog = function( rgLaneLog ) {
-		var abilities = this.m_Game.m_rgTuningData.abilities;
-		var level = getGameLevel();
+	originalUpdateLog = CUI.prototype.UpdateLog;
 
-		if( !this.m_Game.m_rgPlayerTechTree ) return;
-
-		var nHighestTime = 0;
-
-		for( var i=rgLaneLog.length-1; i >= 0; i--) {
-			var rgEntry = rgLaneLog[i];
-
-			if( isNaN( rgEntry.time ) ) rgEntry.time = this.m_nActionLogTime + 1;
-
-			if( rgEntry.time <= this.m_nActionLogTime ) continue;
-
-			switch( rgEntry.type ) {
-				case 'ability':
-					if (window.enableTrollTrack) {
-						if ( (level % 100 !== 0 && [26].indexOf(rgEntry.ability) > -1) || (level % 100 === 0 && [10, 11, 12, 15, 20].indexOf(rgEntry.ability) > -1) ) {
-							var ele = this.m_eleUpdateLogTemplate.clone();
-							$J(ele).data('abilityid', rgEntry.ability);
-							$J('.name', ele).text(rgEntry.actor_name).attr("style", "color: red; font-weight: bold;");
-							$J('.ability', ele).text(abilities[rgEntry.ability].name + " on level " + level);
-							$J('img', ele).attr('src', g_rgIconMap['ability_' + rgEntry.ability].icon);
-
-							$J(ele).v_tooltip({tooltipClass: 'ta_tooltip', location: 'top'});
-
-							this.m_eleUpdateLogContainer[0].insertBefore(ele[0], this.m_eleUpdateLogContainer[0].firstChild);
-						
-							advLog(rgEntry.actor_name + " used " + s().m_rgTuningData.abilities[ rgEntry.ability ].name + " on level " + level, 1);
-						}
-					} else {
-						var ele = this.m_eleUpdateLogTemplate.clone();
-						$J(ele).data('abilityid', rgEntry.ability);
-						$J('.name', ele).text(rgEntry.actor_name);
-						$J('.ability', ele).text(abilities[rgEntry.ability].name);
-						$J('img', ele).attr('src', g_rgIconMap['ability_' + rgEntry.ability].icon);
-
-						$J(ele).v_tooltip({tooltipClass: 'ta_tooltip', location: 'top'});
-
-						this.m_eleUpdateLogContainer[0].insertBefore(ele[0], this.m_eleUpdateLogContainer[0].firstChild);
-					}
-					break;
-				default:
-					console.log("Unknown action log type: %s", rgEntry.type);
-					console.log(rgEntry);
-			}
-
-			if(rgEntry.time > nHighestTime) nHighestTime = rgEntry.time;
-		}
-
-		if( nHighestTime > this.m_nActionLogTime ) this.m_nActionLogTime = nHighestTime;
-
-		var e = this.m_eleUpdateLogContainer[0];
-		while(e.children.length > 20 ) {
-			e.children[e.children.length-1].remove();
-		}
-	};
+	// Set to match preferences
+	toggleTrackTroll();
 
 	// Add cool background
 	$J('body.flat_page.game').css('background-image', 'url(http://i.imgur.com/P8TB236.jpg)');
@@ -412,6 +369,58 @@ function firstRun() {
 
 	isPastFirstRun = true;
 }
+
+// Valve's update
+var originalUpdateLog = null;
+
+// The trolltrack
+var localUpdateLog = function( rgLaneLog ) {
+	var abilities = this.m_Game.m_rgTuningData.abilities;
+	var level = getGameLevel();
+
+	if( !this.m_Game.m_rgPlayerTechTree ) return;
+
+	var nHighestTime = 0;
+
+	for( var i=rgLaneLog.length-1; i >= 0; i--) {
+		var rgEntry = rgLaneLog[i];
+
+		if( isNaN( rgEntry.time ) ) rgEntry.time = this.m_nActionLogTime + 1;
+
+		if( rgEntry.time <= this.m_nActionLogTime ) continue;
+
+		// If performance concerns arise move the level check out and swap switch for if.
+		switch( rgEntry.type ) {
+			case 'ability':
+				if ( (level % 100 !== 0 && [26].indexOf(rgEntry.ability) > -1) || (level % 100 === 0 && [10, 11, 12, 15, 20].indexOf(rgEntry.ability) > -1) ) {
+					var ele = this.m_eleUpdateLogTemplate.clone();
+					$J(ele).data('abilityid', rgEntry.ability);
+					$J('.name', ele).text(rgEntry.actor_name).attr("style", "color: red; font-weight: bold;");
+					$J('.ability', ele).text(abilities[rgEntry.ability].name + " on level " + level);
+					$J('img', ele).attr('src', g_rgIconMap['ability_' + rgEntry.ability].icon);
+
+					$J(ele).v_tooltip({tooltipClass: 'ta_tooltip', location: 'top'});
+
+					this.m_eleUpdateLogContainer[0].insertBefore(ele[0], this.m_eleUpdateLogContainer[0].firstChild);
+				
+					advLog(rgEntry.actor_name + " used " + s().m_rgTuningData.abilities[ rgEntry.ability ].name + " on level " + level, 1);
+				}
+				break;
+			default:
+				console.log("Unknown action log type: %s", rgEntry.type);
+				console.log(rgEntry);
+		}
+
+		if(rgEntry.time > nHighestTime) nHighestTime = rgEntry.time;
+	}
+
+	if( nHighestTime > this.m_nActionLogTime ) this.m_nActionLogTime = nHighestTime;
+
+	var e = this.m_eleUpdateLogContainer[0];
+	while(e.children.length > 20 ) {
+		e.children[e.children.length-1].remove();
+	}
+};
 
 function disableParticles() {
 	if (w.CSceneGame) {
@@ -502,9 +511,18 @@ function MainLoop() {
 
 	if (!isAlreadyRunning) {
 		isAlreadyRunning = true;
+		
+		if( level !== lastLevel ) {
+			// Clear any unsent abilities still in the queue when our level changes
+			s().m_rgAbilityQueue.clear();
+			// update skips if applicable
+			if (updateSkips) {
+				skipsLastJump = level - lastLevel;
+				updateSkips = false;
+			}
+		}
 
-		if ((level % 100 == 0) &&
-				(bHaveItem(ABILITIES.WORMHOLE) || bHaveItem(ABILITIES.LIKE_NEW) )) {
+		if (level % 100 == 0) {
 			// On a WH level, jump everyone with wormholes to lane 0, unless there is a boss there, in which case jump to lane 1.
 			var targetLane = 0;
 			// Check lane 0, enemy 0 to see if it's a boss
@@ -527,13 +545,9 @@ function MainLoop() {
 				s().TryChangeLane(targetLane); // put everyone in the same lane
 			}
 
+			updateSkips = true;
 		} else {
 			goToLaneWithBestTarget(level);
-		}
-		
-		if( level !== lastLevel ) {
-			// Clear any unsent abilities still in the queue when our level changes
-			s().m_rgAbilityQueue.clear();
 		}
 
 		attemptRespawn();
@@ -683,21 +697,31 @@ function useAutoBadgePurchase() {
 	//For now, this is not a problem, but for stylistic reasons, should eventually be changed.
 	
 	//Regular users buy ratio
-	if(likeNewOn100 != 1){
+	
+	
+	if (likeNewOn100 == 1 && wormholeOn100 == 1) {
+		// High Level, "Waste Not" Users
 		var abilityPriorityList = [
-			{ id: ABILITIES.WORMHOLE,   ratio: 1 },
-			{ id: ABILITIES.LIKE_NEW,   ratio: 0 },
+			{ id: ABILITIES.WORMHOLE,   ratio: 0.5 },
+			{ id: ABILITIES.LIKE_NEW,   ratio: 1 },
 			{ id: ABILITIES.CRIT,       ratio: 1 },
 			{ id: ABILITIES.TREASURE,   ratio: 1 },
 			{ id: ABILITIES.PUMPED_UP,  ratio: 1 },
 		];
-	}
-	
-	//Like New users buy ratio
-	if(likeNewOn100 == 1){
+	} else if (likeNewOn100 == 1) {
+		// Like New Buyers
 		var abilityPriorityList = [
 			{ id: ABILITIES.WORMHOLE,   ratio: 0 },
 			{ id: ABILITIES.LIKE_NEW,   ratio: 1 },
+			{ id: ABILITIES.CRIT,       ratio: 1 },
+			{ id: ABILITIES.TREASURE,   ratio: 1 },
+			{ id: ABILITIES.PUMPED_UP,  ratio: 1 },
+		];
+	} else {
+		// Regular User Buy Ratio
+		var abilityPriorityList = [
+			{ id: ABILITIES.WORMHOLE,   ratio: 1 },
+			{ id: ABILITIES.LIKE_NEW,   ratio: 0 },
 			{ id: ABILITIES.CRIT,       ratio: 1 },
 			{ id: ABILITIES.TREASURE,   ratio: 1 },
 			{ id: ABILITIES.PUMPED_UP,  ratio: 1 },
@@ -816,6 +840,11 @@ function useAbilitiesAt100() {
 	if (likeNewOn100) {
 		advLog("At level % 100 = 0, forcing the use of a like new", 2);
 		tryUsingAbility(ABILITIES.LIKE_NEW, false, true); //like new
+	} else {
+		// if people have LIKE_NEWs, there's no harm in letting them use them
+		if (Math.random() <= 0.05) {
+			tryUsingAbility(ABILITIES.LIKE_NEW, false, true);
+		}
 	}
 	
 	if (medicOn100) {
@@ -1208,19 +1237,12 @@ function autoRefreshPage(autoRefreshMinutes){
 }
 
 function autoRefreshHandler() {
-	var enemyData = s().GetEnemy(s().m_rgPlayerData.current_lane, s().m_rgPlayerData.target).m_data;
-	if(typeof enemyData !== "undefined"){
-		var enemyType = enemyData.type;
-		if(enemyType != ENEMY_TYPE.BOSS) {
-			advLog('Refreshing, not boss', 5);
-			w.location.reload(true);
-		}else {
-			advLog('Not refreshing, A boss!', 5);
-			setTimeout(autoRefreshHandler, 3000);
-		}
-	}else{
-		//Wait until it is defined
-		setTimeout(autoRefreshHandler, 1000);
+	if(lastLevelTimeTaken[1].level % 100 == 0) {
+		advLog('Not refreshing (boss level)', 5);
+		setTimeout(autoRefreshHandler, 3000);
+	} else {
+		advLog('Refreshing (not a boss level)', 5);
+		w.location.reload(true);
 	}
 }
 
@@ -1275,6 +1297,12 @@ function toggleTrackTroll(event) {
 
 	if(event !== undefined) {
 		value = handleCheckBox(event);
+	}
+
+	if(value) {
+		CUI.prototype.UpdateLog = localUpdateLog;
+	} else {
+		CUI.prototype.UpdateLog = originalUpdateLog;
 	}
 }
 
@@ -2240,9 +2268,19 @@ function appendBreadcrumbsTitleInfo() {
 
 	element = document.createElement('span');
 	element.className = "bc_span bc_time";
-	element.textContent = 'Remaining Time: 0 hours, 0 minutes.';
+	element.textContent = 'Remaining Time: 0 hours, 0 minutes';
 	breadcrumbs.appendChild(element);
 	ELEMENTS.RemainingTime = element;
+	
+	element = document.createElement('span');
+	element.textContent = ' > ';
+	breadcrumbs.appendChild(element);
+
+	element = document.createElement('span');
+	element.className = "bc_span bc_worms";
+	element.textContent = 'Wormhole Activity: 0';
+	breadcrumbs.appendChild(element);
+	ELEMENTS.WormholesJumped = element;
 }
 
 function updateLevelInfoTitle(level)
@@ -2251,7 +2289,8 @@ function updateLevelInfoTitle(level)
 	var rem_time = countdown(exp_lvl.remaining_time);
 
 	ELEMENTS.ExpectedLevel.textContent = 'Level: ' + level + ', Levels/second: ' + levelsPerSec() + ', YOWHers: ' + (approxYOWHClients > 0 ? approxYOWHClients : '??');
-	ELEMENTS.RemainingTime.textContent = 'Remaining Time: ' + rem_time.hours + ' hours, ' + rem_time.minutes + ' minutes.';
+	ELEMENTS.RemainingTime.textContent = 'Remaining Time: ' + rem_time.hours + ' hours, ' + rem_time.minutes + ' minutes';
+	ELEMENTS.WormholesJumped.textContent = 'Wormhole Activity: ' + (skipsLastJump.toLocaleString ? skipsLastJump.toLocaleString() : skipsLastJump);
 }
 
 }(window));
