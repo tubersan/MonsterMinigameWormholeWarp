@@ -2,7 +2,7 @@
 // @name Ye Olde Megajump
 // @namespace https://github.com/YeOldeWH/MonsterMinigameWormholeWarp
 // @description A script that runs the Steam Monster Minigame for you.  Now with megajump.  Brought to you by the Ye Olde Wormhole Schemers and DannyDaemonic
-// @version 6.0.8
+// @version 6.0.9
 // @match *://steamcommunity.com/minigame/towerattack*
 // @match *://steamcommunity.com//minigame/towerattack*
 // @grant none
@@ -67,6 +67,8 @@ var lastLevelTimeTaken = [{
 							timeTakenInSeconds: 0
 						 }];
 var approxYOWHClients = 0;
+var skipsLastJump = 0;
+var updateSkips = false;
 
 var trt_oldCrit = function() {};
 var trt_oldPush = function() {};
@@ -249,7 +251,8 @@ function firstRun() {
 		// Align abilities to the left
 		"#abilitiescontainer {text-align: left;}",
 		// Activitylog and ability list
-		"#activeinlanecontainer:hover {height: auto; background: rgba(50,50,50,0.9); padding-bottom: 10px; position:absolute; z-index: 1;}",
+		"#activeinlanecontainer {padding-left: 10px;}",
+		"#activeinlanecontainer:hover {height: auto; background-image: radial-gradient(circle farthest-corner at 32px 0px, rgba(0,124,182,0.1), #11111C); padding-bottom: 10px; position:absolute; z-index: 1;}",
 		"#activeinlanecontainer:hover + #activitylog {margin-top: 88px;}",
 		"#activitylog {margin-top: 20px}",
 		// Hide leave game button
@@ -269,10 +272,16 @@ function firstRun() {
 		// Element lock box
 		".lock_elements_box {width: 165px; top: -76px; left: 303px; box-sizing: border-box; line-height: 1rem; padding: 7px 10px; position: absolute; color: #EDEDED;}",
 		// Breadcrumbs
+		".breadcrumbs {color: #bbb;}",
 		".bc_span {text-shadow: 1px 1px 0px rgba( 0, 0, 0, 0.3 );}",
-		".bc_room {color: #D4E157;}",
+		".bc_room {color: #ACE191;}",
 		".bc_level {color: #FFA07A;}",
 		".bc_time {color: #9AC0FF;}",
+		".bc_worms {color: #FFF79A;}",
+		// Adjustments for hard to see areas on the new background
+		"#upgradesscroll, #activityscroll {opacity: 0.75;}",
+		".teamhealth {background: rgba( 240, 240, 255, 0.2 );}",
+		"#upgrades .title_upgrates {color: #67C;}",
 		// Always show ability count
 		".abilitytemplate > a > .abilityitemquantity {visibility: visible; pointer-events: none;}",
 		".tv_ui {background-image: url(http://i.imgur.com/vM1gTFY.gif);}",
@@ -514,9 +523,18 @@ function MainLoop() {
 
 	if (!isAlreadyRunning) {
 		isAlreadyRunning = true;
+		
+		if( level !== lastLevel ) {
+			// Clear any unsent abilities still in the queue when our level changes
+			s().m_rgAbilityQueue.clear();
+			// update skips if applicable
+			if (updateSkips) {
+				skipsLastJump = level - lastLevel;
+				updateSkips = false;
+			}
+		}
 
-		if ((level % 100 == 0) &&
-				(bHaveItem(ABILITIES.WORMHOLE) || bHaveItem(ABILITIES.LIKE_NEW) )) {
+		if (level % 100 == 0) {
 			// On a WH level, jump everyone with wormholes to lane 0, unless there is a boss there, in which case jump to lane 1.
 			var targetLane = 0;
 			// Check lane 0, enemy 0 to see if it's a boss
@@ -533,13 +551,9 @@ function MainLoop() {
 				s().TryChangeLane(targetLane); // put everyone in the same lane
 			}
 
+			updateSkips = true;
 		} else {
 			goToLaneWithBestTarget(level);
-		}
-		
-		if( level !== lastLevel ) {
-			// Clear any unsent abilities still in the queue when our level changes
-			s().m_rgAbilityQueue.clear();
 		}
 
 		attemptRespawn();
@@ -2254,9 +2268,19 @@ function appendBreadcrumbsTitleInfo() {
 
 	element = document.createElement('span');
 	element.className = "bc_span bc_time";
-	element.textContent = 'Remaining Time: 0 hours, 0 minutes.';
+	element.textContent = 'Remaining Time: 0 hours, 0 minutes';
 	breadcrumbs.appendChild(element);
 	ELEMENTS.RemainingTime = element;
+	
+	element = document.createElement('span');
+	element.textContent = ' > ';
+	breadcrumbs.appendChild(element);
+
+	element = document.createElement('span');
+	element.className = "bc_span bc_worms";
+	element.textContent = 'Wormholes Last Jump: 0';
+	breadcrumbs.appendChild(element);
+	ELEMENTS.WormholesJumped = element;
 }
 
 function updateLevelInfoTitle(level)
@@ -2265,7 +2289,8 @@ function updateLevelInfoTitle(level)
 	var rem_time = countdown(exp_lvl.remaining_time);
 
 	ELEMENTS.ExpectedLevel.textContent = 'Level: ' + level + ', Levels/second: ' + levelsPerSec() + ', YOWHers: ' + (approxYOWHClients > 0 ? approxYOWHClients : '??');
-	ELEMENTS.RemainingTime.textContent = 'Remaining Time: ' + rem_time.hours + ' hours, ' + rem_time.minutes + ' minutes.';
+	ELEMENTS.RemainingTime.textContent = 'Remaining Time: ' + rem_time.hours + ' hours, ' + rem_time.minutes + ' minutes';
+	ELEMENTS.WormholesJumped.textContent = 'Wormholes Last Jump: ' + (skipsLastJump.toLocaleString ? skipsLastJump.toLocaleString() : skipsLastJump);
 }
 
 }(window));
