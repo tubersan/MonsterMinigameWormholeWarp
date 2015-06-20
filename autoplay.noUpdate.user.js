@@ -341,6 +341,7 @@ function firstRun() {
 	options1.appendChild(makeCheckBox("removeCritText", "Remove crit text", removeCritText, toggleCritText, false));
 	options1.appendChild(makeCheckBox("removeAllText", "Remove all text", removeAllText, toggleAllText, false));
 	options1.appendChild(makeCheckBox("disableRenderer", "Limit frames per second to increase performance", disableRenderer, toggleRenderer, false));
+	options1.appendChild(makeCheckBox("enableChen", "Honk Honk?", enableChen, toggleChen, false));
 
 	info_box.appendChild(options1);
 
@@ -1232,6 +1233,7 @@ function toggleRenderer(event) {
 
 var oldTvBg = "";
 function toggleChen(event) {
+	enableChen = !enableChen;
 	if (enableChen) {
 		oldTvBg = w.$J('.tv_ui').css('background-image');
 		w.$J('.tv_ui').css('background-image', 'url(//i.imgur.com/QNSzdlS.png)');
