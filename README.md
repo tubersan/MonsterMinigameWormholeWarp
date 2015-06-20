@@ -1,6 +1,6 @@
 # Monster Minigame Wormhole Warp Script #
 
-[![forthebadge](http://forthebadge.com/images/badges/fuck-it-ship-it.svg)](http://forthebadge.com) [![Build Status](https://travis-ci.org/SteamDatabase/steamSummerMinigame.svg?branch=master)](https://travis-ci.org/SteamDatabase/steamSummerMinigame)
+#### WARNING: this script uses an autoupdater. If you're not down for this, switch your script to use `https://github.com/YeOldeWH/MonsterMinigameWormholeWarp/raw/master/autoPlay.noUpdate.user.js` and update manually through Greasemonkey/Tampermonkey like normal. ####
 
 ## Installation ##
 
