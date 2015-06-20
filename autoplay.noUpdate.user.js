@@ -309,7 +309,7 @@ function firstRun() {
 	}
 
 	// Set to match preferences
-	getPreference
+	toggleTrackTroll();
 
 	// Add cool background
 	$J('body.flat_page.game').css('background-image', 'url(http://i.imgur.com/P8TB236.jpg)');
