@@ -45,6 +45,7 @@ var disableRenderer = getPreferenceBoolean("disableRenderer", true);
 var enableTrollTrack = getPreferenceBoolean("enableTrollTrack", false);
 var enableElementLock = getPreferenceBoolean("enableElementLock", true);
 var enableAutoRefresh = getPreferenceBoolean("enableAutoRefresh", typeof GM_info !== "undefined");
+var enableChen = getPreferenceBoolean("enableChen", false);
 
 var autoRefreshMinutes = 30;
 var autoRefreshMinutesRandomDelay = 10;
@@ -1227,6 +1228,17 @@ function toggleRenderer(event) {
 
 		w.g_Minigame.Render = function() {};
 	}
+}
+
+var oldTvBg = "";
+function toggleChen(event) {
+	if (enableChen) {
+		oldTvBg = w.$J('.tv_ui').css('background-image');
+		w.$J('.tv_ui').css('background-image', 'url(//i.imgur.com/QNSzdlS.png)');
+	} else {
+		w.$J('.tv_ui').css('background-image', oldTvBg);
+	}
+
 }
 
 function autoRefreshPage(autoRefreshMinutes){
