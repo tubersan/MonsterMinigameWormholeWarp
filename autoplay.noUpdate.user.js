@@ -316,6 +316,7 @@ function firstRun() {
 
 	// Set to match preferences
 	toggleTrackTroll();
+	toggleChen();
 
 	// Add cool background
 	$J('body.flat_page.game').css('background-image', 'url(http://i.imgur.com/P8TB236.jpg)');
@@ -1236,7 +1237,13 @@ function toggleRenderer(event) {
 
 var oldTvBg = "";
 function toggleChen(event) {
-	enableChen = !enableChen;
+	var value = enableChen;
+
+	if(event !== undefined) {
+		value = handleCheckBox(event);
+	}
+	enableChen = value;
+
 	if (enableChen) {
 		oldTvBg = w.$J('.tv_ui').css('background-image');
 		w.$J('.tv_ui').css('background-image', 'url(//i.imgur.com/QNSzdlS.png)');
