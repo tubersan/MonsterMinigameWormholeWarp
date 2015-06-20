@@ -810,6 +810,12 @@ function useAbilitiesAt100() {
 	if (likeNewOn100) {
 		advLog("At level % 100 = 0, forcing the use of a like new", 2);
 		tryUsingAbility(ABILITIES.LIKE_NEW, false, true); //like new
+	} else {
+		// No reason for people to *not* use Like News if they happen to have them for some reason
+		// example: people juggling between steamdb and YOWH
+		if(Math.random() <= 0.05) {
+			tryUsingAbility(ABILITIES.LIKE_NEW, false, true);
+		}
 	}
 	
 	if (medicOn100) {
