@@ -365,6 +365,16 @@ function firstRun() {
 	updateToggle("limitFPS", disableRenderer);
 	
 	isPastFirstRun = true;
+	
+	//try to autoBuy BP
+	if(enableAutoBadgePurchase){
+		var bpAutoBuyer = setInterval(function() {
+			if($J("#spend_badge_points_dialog").is(":visible")){
+				clearInterval(bpAutoBuyer);
+				useAutoBadgePurchase();
+			}
+		}, 100);
+	}
 }
 
 function addExtraUI() {
@@ -883,9 +893,6 @@ function MainLoop() {
 				useAutoUpgrade();
 				useAutoPurchaseAbilities();
 			}
-			else {
-				useAutoBadgePurchase();
-			}
 		}
 
 		var absoluteCurrentClickRate = 0;
@@ -990,7 +997,7 @@ function maxItemsStillUsable(abilityID, usagePct) {
 	return Math.floor(maxItemUsePerSec * usagePct * getSecondsRemaining());
 }
 
-function getBuyCount(abilityID, usagePct) {
+function getBPBuyCount(abilityID, usagePct) {
 	var badgePoints = getScene().m_rgPlayerTechTree.badge_points;
 	
 	return Math.min(
@@ -1006,7 +1013,9 @@ function useAutoBadgePurchase() {
 	window.ShowAlertDialog(
 		'Automagic BP Purchaser',
 		'<h3 style="color:#FF5252">Just chill for a sec. The script will autoBuy your BP bonuses for you.<br><br></h3>' +
-		'<h3 style="color:yellow">You have ' + getScene().m_rgPlayerTechTree.badge_points + ' badgePoints to spend. This may take a little while, so hold tight.</p>'
+		'<h3 style="color:yellow">You have ' + getScene().m_rgPlayerTechTree.badge_points + ' badgePoints to spend. This may take a little while, so hold tight.</h3>' +
+
+		'<p style="color:yellow">(Note: This dialog will NOT autoclose. Any additional badgePoints remaining after a few seconds, feel free to distribute however you feel.)</p>'
 	);
 	
 	var badgePoints = getScene().m_rgPlayerTechTree.badge_points;
@@ -1023,6 +1032,17 @@ function useAutoBadgePurchase() {
 		{ id: ABILITIES.CRIT,		usagePct: 1 },
 		{ id: ABILITIES.TREASURE,	usagePct: 1 },
 		{ id: ABILITIES.PUMPED_UP,	usagePct: 1 },
+		{ id: ABILITIES.FEELING_LUCKY,	usagePct: 1 },
+		{ id: ABILITIES.RESURRECTION,	usagePct: 1 },
+		{ id: ABILITIES.GOD_MODE,	usagePct: 1 },
+		{ id: ABILITIES.GOD_MODE,	usagePct: 1 },
+		{ id: ABILITIES.MAX_ELEMENTAL_DAMAGE,	usagePct: 1 },
+		{ id: ABILITIES.RAINING_GOLD,	usagePct: 1 },
+		{ id: ABILITIES.STEAL_HEALTH,	usagePct: 1 },
+		{ id: ABILITIES.CRIPPLE_SPAWNER,	usagePct: 1 }, 
+		{ id: ABILITIES.REFLECT_DAMAGE,	usagePct: 1 },
+		{ id: ABILITIES.CRIPPLE_MONSTER,	usagePct: 1 },
+		{ id: ABILITIES.THROW_MONEY_AT_SCREEN,	usagePct: 1 },
 	];
 	
 	// Attempt to automatically determine if a user should be a LN
@@ -1032,7 +1052,7 @@ function useAutoBadgePurchase() {
 		var id = abilityPriorityList[i].id;
 		var usagePct = abilityPriorityList[i].usagePct;
 		
-		var toBuyCount = getBuyCount(id, usagePct); 
+		var toBuyCount = getBPBuyCount(id, usagePct); 
 		
 		//Hard cap crit at 100
 		if(id == ABILITIES.CRIT)
@@ -1046,10 +1066,32 @@ function useAutoBadgePurchase() {
 		badgePoints -= toBuyCount * abilityData[id].badge_points_cost;
 		getScene().m_rgPlayerTechTree.badge_points = badgePoints;
 	}
-
+	
 	//apply the purchase queue we just made
 	getScene().m_rgPurchaseItemsQueue = getScene().m_rgPurchaseItemsQueue.concat(abilityPurchaseQueue);
 	getScene().m_UI.UpdateSpendBadgePointsDialog();
+	
+	
+	// Any remaining BP is useless, just spend it all on pumped up to deplete BP
+	var dumpAbility = ABILITIES.PUMPED_UP;
+	var dumpCost = abilityData[dumpAbility].badge_points_cost;
+	//Loop this cause sometimes you don't actually spend everything
+	while(getScene().m_rgPlayerTechTree.badge_points >  0) {
+		badgePoints = getScene().m_rgPlayerTechTree.badge_points;
+		for(badgePoints; badgePoints > 0;  badgePoints -= dumpCost)
+			abilityPurchaseQueue.push(ABILITIES.PUMPED_UP);
+		
+		getScene().m_rgPlayerTechTree.badge_points = badgePoints;
+		
+		//apply the purchase queue we just made
+		getScene().m_rgPurchaseItemsQueue = getScene().m_rgPurchaseItemsQueue.concat(abilityPurchaseQueue);
+		getScene().m_UI.UpdateSpendBadgePointsDialog();
+		
+	}
+	
+	
+	// Force Hide the BP store (after half a second, since if you do it too fast steam re-opens it)
+	$J("#spend_badge_points_dialog").hide();
 }
 
 function toggleAutoBadgePurchase(event) {
@@ -1141,19 +1183,26 @@ function useAbilitiesAt100() {
 	}
 	
 	//This should equate to approximately 1.8 Like News per second
-	if (getAbilityItemQuantity(ABILITIES.LIKE_NEW) > 0) {
+	//Spam them indicriminantley if you have a lot
+	if (getAbilityItemQuantity(ABILITIES.LIKE_NEW) > 500) {
 		advLog("At level % 100 = 0, forcing the use of a like new", 2);
 		tryUsingAbility(ABILITIES.LIKE_NEW, false, true); //like new
-	} else {
-		// if people have LIKE_NEWs, there's no harm in letting them use them
-		if (Math.random() <= 0.05) {
-			tryUsingAbility(ABILITIES.LIKE_NEW, false, true);
-		}
+	}
+	// If you only have a few remaining, only use them occasionally
+	else if (Math.random() <= 0.05) {
+		tryUsingAbility(ABILITIES.LIKE_NEW, false, true);
 	}
 	
+	//Use Medics
 	if (hasAbility(ABILITIES.MEDICS)) {
 		advLog("At level % 100 = 0, forcing the use of a medic", 2);
 		tryUsingAbility(ABILITIES.MEDICS, false, true); //medics
+	}
+	
+	
+	if (hasAbility(ABILITIES.FEELING_LUCKY)) {
+		advLog("At level % 100 = 0, forcing the use of a Feeling Lucky", 2);
+		tryUsingAbility(ABILITIES.FEELING_LUCKY, false, true); //medics
 	}
 }
 
