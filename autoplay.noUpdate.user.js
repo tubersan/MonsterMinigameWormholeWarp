@@ -503,8 +503,7 @@ function MainLoop() {
 	if (!isAlreadyRunning) {
 		isAlreadyRunning = true;
 
-		if ((level % 100 == 0) &&
-				(bHaveItem(ABILITIES.WORMHOLE) || bHaveItem(ABILITIES.LIKE_NEW) )) {
+		if (level % 100 == 0) {
 			// On a WH level, jump everyone with wormholes to lane 0, unless there is a boss there, in which case jump to lane 1.
 			var targetLane = 0;
 			// Check lane 0, enemy 0 to see if it's a boss
