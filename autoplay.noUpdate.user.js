@@ -1016,9 +1016,9 @@ function useAutoBadgePurchase() {
 	window.ShowAlertDialog(
 		'Automagic BP Purchaser',
 		'<h3 style="color:#FF5252">Just chill for a sec. The script will autoBuy your BP bonuses for you.<br><br></h3>' +
-		'<h3 style="color:yellow">You have ' + getScene().m_rgPlayerTechTree.badge_points + ' badgePoints to spend. This may take a little while, so hold tight.</h3>' +
+		'<h3 style="color:yellow">You have ' + getScene().m_rgPlayerTechTree.badge_points + ' badgePoints to spend. This may take a little while, so hold tight. The more BP you have, the longer it will take.</h3>' +
 
-		'<p style="color:yellow">(Note: This dialog will NOT autoclose. Any additional badgePoints remaining after a few seconds, feel free to distribute however you feel.)</p>'
+		'<p style="color:yellow">(Note: This dialog will NOT autoclose. Any additional badgePoints remaining after a little while, feel free to distribute however you feel.)</p>'
 	);
 	
 	var badgePoints = getScene().m_rgPlayerTechTree.badge_points;
