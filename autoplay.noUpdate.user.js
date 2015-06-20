@@ -1002,6 +1002,10 @@ function useAutoBadgePurchase() {
 		
 		var toBuyCount = getBuyCount(id, usagePct); 
 		
+		//Hard cap crit at 100
+		if(id == ABILITIES.CRIT)
+			toBuyCount = Math.Min(toBuyCount, 89); // Max of 89 crit items (puts you at 99.000000149011612% crit chance)
+		
 		// Buy the item the specified number of times
 		for(var j=0; j < toBuyCount; j++ )
 			abilityPurchaseQueue.push(id);
@@ -1915,9 +1919,12 @@ function useAbilities(level)
 	// Good Luck Charms / Crit
 	if(!hasMaxCriticalOnLane())
 	{
-		if (tryUsingAbility(ABILITIES.CRIT)){
-			// Crits is purchased, cooled down, and needed. Trigger it.
-			advLog('Crit chance is always good.', 3);
+		//Only use crit if we aren't at cap, since people have reported it goes back to 0
+		if(getScene().m_rgPlayerTechTree.crit_percentage <= 99) {
+			if (tryUsingAbility(ABILITIES.CRIT)){
+				// Crits is purchased, cooled down, and needed. Trigger it.
+				advLog('Crit chance is always good.', 3);
+			}
 		}
 	}
 	if(!hasMaxCriticalOnLane())
