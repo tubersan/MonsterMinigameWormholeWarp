@@ -2236,7 +2236,7 @@ function updateLevelInfoTitle(level)
 	var exp_lvl = expectedLevel(level);
 	var rem_time = countdown(exp_lvl.remaining_time);
 
-	ELEMENTS.ExpectedLevel.textContent = 'Level: ' + level + ', Levels/second: ' + levelsPerSec() + ', YOWHers: ' + (approxYOWHClients > 0 ? approxYOWHClients : '??');
+	ELEMENTS.ExpectedLevel.textContent = 'Level: ' + level + ', Levels/second: ' + levelsPerSec();
 	ELEMENTS.RemainingTime.textContent = 'Remaining Time: ' + rem_time.hours + ' hours, ' + rem_time.minutes + ' minutes.';
 }
 
