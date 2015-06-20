@@ -42,7 +42,7 @@ var removeCritText = getPreferenceBoolean("removeCritText", false);
 var removeAllText = getPreferenceBoolean("removeAllText", false);
 var enableFingering = getPreferenceBoolean("enableFingering", true);
 var disableRenderer = getPreferenceBoolean("disableRenderer", true);
-var enableTrollTrack = getPreferenceBoolean("enableTrollTrack", false);
+var enableMisfiredAbilities = getPreferenceBoolean("enableMisfiredAbilities", false);
 var enableElementLock = getPreferenceBoolean("enableElementLock", true);
 var enableAutoRefresh = getPreferenceBoolean("enableAutoRefresh", typeof GM_info !== "undefined");
 
@@ -306,7 +306,7 @@ function firstRun() {
 
 			switch( rgEntry.type ) {
 				case 'ability':
-					if (window.enableTrollTrack) {
+					if (window.enableMisfiredAbilities) {
 						if ( (level % 100 !== 0 && [26].indexOf(rgEntry.ability) > -1) || (level % 100 === 0 && [10, 11, 12, 15, 20].indexOf(rgEntry.ability) > -1) ) {
 							var ele = this.m_eleUpdateLogTemplate.clone();
 							$J(ele).data('abilityid', rgEntry.ability);
@@ -386,7 +386,7 @@ function firstRun() {
 	}
 
 	options2.appendChild(makeCheckBox("enableFingering", "Enable targeting pointer", enableFingering, toggleFingering, false));
-	options2.appendChild(makeCheckBox("enableTrollTrack", "Enable tracking trolls", enableTrollTrack, toggleTrackTroll, false));
+	options2.appendChild(makeCheckBox("enableMisfiredAbilities", "Show misfired abilities", enableMisfiredAbilities, toggleMisfiredAbilities, false));
 	options2.appendChild(makeNumber("setLogLevel", "Change the log level (you shouldn't need to touch this)", logLevel, 0, 5, updateLogLevel));
 
 	info_box.appendChild(options2);
@@ -1256,8 +1256,8 @@ function toggleAllText(event) {
 	}
 }
 
-function toggleTrackTroll(event) {
-	var value = enableTrollTrack;
+function toggleMisfiredAbilities(event) {
+	var value = enableMisfiredAbilities;
 
 	if(event !== undefined) {
 		value = handleCheckBox(event);
