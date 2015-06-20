@@ -278,7 +278,7 @@ function firstRun() {
 		".bc_time {color: #9AC0FF;}",
 		".bc_worms {color: #FFF79A;}",
 		// Upgrades and abilities are hard to see on new background
-		".upgrades {color: #67C;}",
+		"#upgrades .title_upgrates {color: #67C;}",
 		// Always show ability count
 		".abilitytemplate > a > .abilityitemquantity {visibility: visible; pointer-events: none;}",
 		".tv_ui {background-image: url(http://i.imgur.com/vM1gTFY.gif);}",
