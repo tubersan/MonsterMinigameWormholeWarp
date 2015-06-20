@@ -813,10 +813,9 @@ function useAbilitiesAt100() {
 	}
 	
 	//This should equate to approximately 1.8 Like News per second
-	if (likeNewOn100) {
-		advLog("At level % 100 = 0, forcing the use of a like new", 2);
+
 		tryUsingAbility(ABILITIES.LIKE_NEW, false, true); //like new
-	}
+	
 	
 	if (medicOn100) {
 		advLog("At level % 100 = 0, forcing the use of a medic", 2);
