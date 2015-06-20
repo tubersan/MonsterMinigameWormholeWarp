@@ -308,6 +308,8 @@ function firstRun() {
 		document.body.style.backgroundPosition = "0 0";
 	}
 
+	originalUpdateLog = CUI.prototype.UpdateLog;
+
 	// Set to match preferences
 	toggleTrackTroll();
 
@@ -369,7 +371,7 @@ function firstRun() {
 }
 
 // Valve's update
-var originalUpdateLog = CUI.prototype.UpdateLog;
+var originalUpdateLog = null;
 
 // The trolltrack
 var localUpdateLog = function( rgLaneLog ) {
