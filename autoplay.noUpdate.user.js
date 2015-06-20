@@ -684,18 +684,11 @@ function useAutoBadgePurchase() {
 	
 	var badgePoints = getScene().m_rgPlayerTechTree.badge_points;
 	
-	// Attempt to automatically determine if a user should be a LN
-	var maxUsableWormholes = maxItemsStillUsable(ABILITIES.WORMHOLE, 0.2); // Currently, this is 30240 WHs on Round start, and decreases over time
-	
-	//If you can buy more than the number of usable wormholes, toggle the LNUser flag
-	if(badgePoints > abilityData[ABILITIES.WORMHOLE].badge_points_cost * maxUsableWormholes)
-		likeNewOn100 = 1;
+	var abilityData = getScene().m_rgTuningData.abilities;
+	var abilityPurchaseQueue = [];
 	
 	// id = ability
 	// usagePct = percent of time this ability will be spammed.
-	
-	//Note: this isn't an actual ratio, because badge points get reduced and the values don't add to 1
-	//For now, this is not a problem, but for stylistic reasons, should eventually be changed.
 	
 	var abilityPriorityList = [
 		{ id: ABILITIES.WORMHOLE,	usagePct: 0.2 },
@@ -705,8 +698,12 @@ function useAutoBadgePurchase() {
 		{ id: ABILITIES.PUMPED_UP,	usagePct: 1 },
 	];
 	
-	var abilityData = getScene().m_rgTuningData.abilities;
-	var abilityPurchaseQueue = [];
+	// Attempt to automatically determine if a user should be a LN
+	var maxUsableWormholes = maxItemsStillUsable(ABILITIES.WORMHOLE, 0.2); // Currently, this is 30240 WHs on Round start, and decreases over time
+	
+	//If you can buy more than the number of usable wormholes, toggle the LNUser flag
+	if(badgePoints > abilityData[ABILITIES.WORMHOLE].badge_points_cost * maxUsableWormholes)
+		likeNewOn100 = 1;
 
 	for (var i = 0; i < abilityPriorityList.length; i++) {
 		var id = abilityPriorityList[i].id;
