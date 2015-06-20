@@ -2,7 +2,7 @@
 // @name Ye Olde Megajump [Ensingm2 Fork]
 // @namespace https://github.com/ensingm2/MonsterMinigameWormholeWarp
 // @description A script that runs the Steam Monster Minigame for you.  Now with megajump.  Brought to you by the Ye Olde Wormhole Schemers and DannyDaemonic
-// @version 6.1.1
+// @version 6.1.2
 // @match *://steamcommunity.com/minigame/towerattack*
 // @match *://steamcommunity.com//minigame/towerattack*
 // @grant none
@@ -43,16 +43,20 @@ var disableRenderer = getPreferenceBoolean("disableRenderer", true);
 var enableTrollTrack = getPreferenceBoolean("enableTrollTrack", false);
 var enableElementLock = getPreferenceBoolean("enableElementLock", true);
 var enableAutoRefresh = getPreferenceBoolean("enableAutoRefresh", typeof GM_info !== "undefined");
+var enableChen = getPreferenceBoolean("enableChen", false);
 
-var autoRefreshMinutes = 30;
-var autoRefreshMinutesRandomDelay = 10;
+var autoRefreshMinutes = 15; // Lowering to 15 minutes
+var autoRefreshMinutesRandomDelay = 5; // Lowering to 5 minutes
 var autoRefreshSecondsCheckLoadedDelay = 30;
 
 var predictTicks = 0;
 var predictJumps = 0;
 var predictLastWormholesUpdate = 0;
 
-
+// Auto refresh handler delay
+var autoRefreshDuringBossDelayTotal = 0; // Total delay already passed
+var autoRefreshDuringBossDelay = 60000; // Delay during the boss (ms)
+var autoRefreshDuringBossDelayStep = 2500; // Delay 'step' (until we try again)
 
 // DO NOT MODIFY
 var isPastFirstRun = false;
@@ -333,10 +337,6 @@ function firstRun() {
 		window.WebStorage.SetLocal('mg_how2click', 1);
 	}
 
-	if(event !== undefined) {
-		value = handleCheckBox(event);
-	}
-
 	if(value) {
 		getScene().m_containerParticles.addChild(getScene().m_spriteFinger);
 	} else {
@@ -436,6 +436,7 @@ function addExtraUI() {
 	$J("#settings").append('<div id="pointer_toggle" class="toggle"><span class="value enabled"></span><span class="title">Targetting Pointer: </span></div>');
 	$J("#settings").append('<div id="trollTracker_toggle" class="toggle"><span class="value disabled"></span><span class="title">Troll Tracking: </span></div>');
 	$J("#settings").append('<div id="elementLock_toggle" class="toggle"><span class="value enabled"></span><span class="title">Element Locking: </span></div>');
+	$J("#settings").append('<div id="chen_toggle" class="toggle"><span class="value disabled"></span><span class="title">Honk Honk? </span></div>');
 	
 	$J("#settings").append('<div><span class="toggle">Lock Level: <input type="number" id="logLevelInput" value="'+logLevel+'" min=0 max=5></input></span></div>');
 	
@@ -447,9 +448,6 @@ function addExtraUI() {
 	$J("#logLevelInput").click(function(event) {
 		Event.stop(event);
 	});
-	
-	//makeNumber("setLogLevel", "Log Level:", logLevel, 0, 5, updateLogLevel)
-	//$J("#settings").append('<div id="" class="toggle"><span class="value enabled"></span><span class="title">Log Level: </span></div>');
 	
 	$J("#settings").append('<div><span class="toggle" style="margin-left: 25px; color: red">* - Restart Required</span></div>');
 	
@@ -505,6 +503,11 @@ function addExtraUI() {
 	$J("#elementLock_toggle").click(function(e) {
 		e.stopPropagation();
 		toggleElementLock();
+	});
+	
+	$J("#chen_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleChen();
 	});
 	
 	// We force update the icon once to sync with active settings
@@ -1179,7 +1182,7 @@ function useAbilitiesAt100() {
 				return;
 			}
 			if (bHaveItem(ABILITIES.WORMHOLE)) triggerAbility(ABILITIES.WORMHOLE); //wormhole
-		}, 100);
+		}, 1000); //SLOW DOWN. 100ms trigger is causing server to ignore client, primary cause of client desync.
 	}
 	
 	//This should equate to approximately 1.8 Like News per second
@@ -1533,6 +1536,19 @@ function toggleRenderer() {
 	updateToggle("limitFPS", disableRenderer);
 }
 
+var oldTvBg = "";
+function toggleChen(event) {
+	enableChen = !enableChen;
+	if (enableChen) {
+		oldTvBg = window.$J('.tv_ui').css('background-image');
+		window.$J('.tv_ui').css('background-image', 'url(//i.imgur.com/QNSzdlS.png)');
+	} else {
+		window.$J('.tv_ui').css('background-image', oldTvBg);
+	}
+
+	updateToggle("chen", enableChen);
+}
+
 function autoRefreshPage(autoRefreshMinutes){
 	var timerValue = (autoRefreshMinutes + autoRefreshMinutesRandomDelay * Math.random()) * 60 * 1000;
 	refreshTimer = setTimeout(function() {
@@ -1541,12 +1557,14 @@ function autoRefreshPage(autoRefreshMinutes){
 }
 
 function autoRefreshHandler() {
-	if(lastLevelTimeTaken[1].level % 100 == 0) {
+	// Only skip on % 100 levels when it's been less than the maximum delay specified.
+	if(lastLevelTimeTaken[1].level % 100 === 0 && autoRefreshDuringBossDelayTotal < autoRefreshFirstBossDelay) {
 		advLog('Not refreshing (boss level)', 5);
-		setTimeout(autoRefreshHandler, 3000);
+		autoRefreshDuringBossDelayTotal += autoRefreshFirstBossDelayStep;
+		setTimeout(autoRefreshHandler, autoRefreshFirstBossDelayStep);
 	} else {
 		advLog('Refreshing (not a boss level)', 5);
-		w.location.reload(true);
+		window.location.reload(true);
 	}
 }
 
