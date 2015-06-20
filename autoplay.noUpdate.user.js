@@ -2,7 +2,7 @@
 // @name Ye Olde Megajump
 // @namespace https://github.com/YeOldeWH/MonsterMinigameWormholeWarp
 // @description A script that runs the Steam Monster Minigame for you.  Now with megajump.  Brought to you by the Ye Olde Wormhole Schemers and DannyDaemonic
-// @version 6.0.6
+// @version 6.0.7
 // @match *://steamcommunity.com/minigame/towerattack*
 // @match *://steamcommunity.com//minigame/towerattack*
 // @grant none
@@ -176,6 +176,14 @@ var GAME_STATUS = {
 // Try to disable particles straight away,
 // if not yet available, they will be disabled in firstRun
 disableParticles();
+
+// Define custom getters for document.hidden and the prefixed versions, so the game
+// doesn't stop ticking in the background.
+if (Object.defineProperty) {
+  var props = ['hidden', 'webkitHidden', 'mozHidden', 'msHidden'];
+  for (var i = 0; i < props.length; ++i)
+    Object.defineProperty(document, props[i], {value: false});
+}
 
 if(!getPreferenceBoolean("alertShown", false)) {
 	window.ShowAlertDialog(
@@ -2452,7 +2460,7 @@ function appendBreadcrumbsTitleInfo() {
 
 	element = document.createElement('span');
 	element.className = "bc_span bc_level";
-	element.textContent = 'Level: 0, Expected Level: 0, Likely Level: 0';
+	element.textContent = 'Level: 0';
 	breadcrumbs.appendChild(element);
 	ELEMENTS.ExpectedLevel = element;
 
