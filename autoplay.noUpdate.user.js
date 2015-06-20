@@ -12,7 +12,7 @@
 
 // IMPORTANT: Update the @version property above to a higher number such as 1.1 and 1.2 when you update the script! Otherwise, Tamper / Greasemonkey users will not update automatically.
 
-(function(w) {
+(function(window) {
 	"use strict";
 
 // OPTIONS
@@ -178,7 +178,7 @@ var GAME_STATUS = {
 disableParticles();
 
 if(!getPreferenceBoolean("alertShown", false)) {
-	w.ShowAlertDialog(
+	window.ShowAlertDialog(
 		'Ye Olde Megajump',
 
 		'<div style="color:#FF5252">This dialog will be shown just once, so please read through it.<br><br></div>' +
@@ -192,7 +192,7 @@ if(!getPreferenceBoolean("alertShown", false)) {
 }
 
 function getScene() {
-	return w.g_Minigame.m_CurrentScene;
+	return window.g_Minigame.m_CurrentScene;
 }
 
 function firstRun() {
@@ -200,7 +200,7 @@ function firstRun() {
 
 	trt_oldCrit = getScene().DoCritEffect;
 	trt_oldPush = getScene().m_rgClickNumbers.push;
-	trt_oldRender = w.g_Minigame.Render;
+	trt_oldRender = window.g_Minigame.Render;
 
 	toggleFingering();
 
@@ -218,10 +218,10 @@ function firstRun() {
 	disableParticles();
 
 	// disable enemy flinching animation when they get hit
-	if(removeFlinching && w.CEnemy) {
-		w.CEnemy.prototype.TakeDamage = function() {};
-		w.CEnemySpawner.prototype.TakeDamage = function() {};
-		w.CEnemyBoss.prototype.TakeDamage = function() {};
+	if(removeFlinching && window.CEnemy) {
+		window.CEnemy.prototype.TakeDamage = function() {};
+		window.CEnemySpawner.prototype.TakeDamage = function() {};
+		window.CEnemyBoss.prototype.TakeDamage = function() {};
 	}
 
 	if(removeCritText) {
@@ -407,11 +407,11 @@ function firstRun() {
 }
 
 function disableParticles() {
-	if (w.CSceneGame) {
-		w.CSceneGame.prototype.DoScreenShake = function() {};
+	if (window.CSceneGame) {
+		window.CSceneGame.prototype.DoScreenShake = function() {};
 
 		if(removeParticles) {
-			w.CSceneGame.prototype.SpawnEmitter = function(emitter) {
+			window.CSceneGame.prototype.SpawnEmitter = function(emitter) {
 				emitter.emit = false;
 				return emitter;
 			};
@@ -530,9 +530,9 @@ function MainLoop() {
 
 		attemptRespawn();
 
-		if (level % 100 !== 0 && w.SteamDB_Wormhole_Timer) {
-			w.clearInterval(w.SteamDB_Wormhole_Timer);
-			w.SteamDB_Wormhole_Timer = false;
+		if (level % 100 !== 0 && window.SteamDB_Wormhole_Timer) {
+			window.clearInterval(window.SteamDB_Wormhole_Timer);
+			window.SteamDB_Wormhole_Timer = false;
 		}
 
 		if(level % 100 == 0){
@@ -597,7 +597,7 @@ function MainLoop() {
 		}
 
 		getScene().m_nLastTick = false;
-		w.g_msTickRate = 1000;
+		window.g_msTickRate = 1000;
 
 		var damagePerClick = getScene().CalculateDamage(
 			getScene().m_rgPlayerTechTree.damage_per_click,
@@ -610,7 +610,7 @@ function MainLoop() {
 			getScene().Tick();
 
 			requestAnimationFrame(function() {
-				w.g_Minigame.Renderer.render(getScene().m_Container);
+				window.g_Minigame.Renderer.render(getScene().m_Container);
 			});
 		}
 
@@ -625,7 +625,7 @@ function MainLoop() {
 				displayText(
 					enemy.m_Sprite.position.x - (enemy.m_nLane * 440),
 					enemy.m_Sprite.position.y - 52,
-					"-" + w.FormatNumberForDisplay((damagePerClick * absoluteCurrentClickRate), 5),
+					"-" + window.FormatNumberForDisplay((damagePerClick * absoluteCurrentClickRate), 5),
 					"#aaf"
 				);
 
@@ -653,7 +653,7 @@ function MainLoop() {
 					displayText(
 						enemy.m_Sprite.position.x - (enemy.m_nLane * 440),
 						enemy.m_Sprite.position.y - 17,
-						"+" + w.FormatNumberForDisplay(goldPerSecond, 5),
+						"+" + window.FormatNumberForDisplay(goldPerSecond, 5),
 						"#e1b21e"
 					);
 				}
@@ -802,13 +802,13 @@ function levelsPerSec() {
 //at level 100 spam WH, Like New, and medics, based on your role
 function useAbilitiesAt100() {
 
-	if (wormholeOn100 && !w.SteamDB_Wormhole_Timer) {
+	if (wormholeOn100 && !window.SteamDB_Wormhole_Timer) {
 		advLog("At level % 100 = 0, forcing the use of wormholes nonstop", 2);
-		w.SteamDB_Wormhole_Timer = w.setInterval(function(){
+		window.SteamDB_Wormhole_Timer = window.setInterval(function(){
 			if (getGameLevel() % 100 !== 0) {
 				// We're not on a *00 level anymore, stop!!
-				w.clearInterval(w.SteamDB_Wormhole_Timer);
-				w.SteamDB_Wormhole_Timer = false;
+				window.clearInterval(window.SteamDB_Wormhole_Timer);
+				window.SteamDB_Wormhole_Timer = false;
 				return;
 			}
 			if (bHaveItem(ABILITIES.WORMHOLE)) triggerAbility(ABILITIES.WORMHOLE); //wormhole
@@ -1022,7 +1022,7 @@ function toggleAutoPurchase(event) {
 function refreshPlayerData() {
 	advLog("Refreshing player data", 2);
 
-	w.g_Server.GetPlayerData(
+	window.g_Server.GetPlayerData(
 		function(rgResult) {
 			var instance = getScene();
 
@@ -1036,7 +1036,7 @@ function refreshPlayerData() {
 			if( rgResult.response.tech_tree ) {
 				instance.m_rgPlayerTechTree = rgResult.response.tech_tree;
 				if( rgResult.response.tech_tree.upgrades ) {
-					instance.m_rgPlayerUpgrades = w.V_ToArray( rgResult.response.tech_tree.upgrades );
+					instance.m_rgPlayerUpgrades = window.V_ToArray( rgResult.response.tech_tree.upgrades );
 				} else {
 					instance.m_rgPlayerUpgrades = [];
 				}
@@ -1060,7 +1060,7 @@ function makeNumber(name, desc, value, min, max, listener) {
 	number.min = min;
 	number.max = max;
 	number.onchange = listener;
-	w[number.name] = number;
+	window[number.name] = number;
 
 	label.appendChild(number);
 	label.appendChild(description);
@@ -1106,7 +1106,7 @@ function makeCheckBox(name, desc, state, listener, reqRefresh) {
 	checkbox.name = name;
 	checkbox.checked = state;
 	checkbox.onclick = listener;
-	w[checkbox.name] = checkbox.checked;
+	window[checkbox.name] = checkbox.checked;
 
 	label.appendChild(checkbox);
 	label.appendChild(description);
@@ -1125,7 +1125,7 @@ function handleCheckBox(event) {
 	var checkbox = event.target;
 	setPreference(checkbox.name, checkbox.checked);
 
-	w[checkbox.name] = checkbox.checked;
+	window[checkbox.name] = checkbox.checked;
 	return checkbox.checked;
 }
 
@@ -1146,12 +1146,12 @@ function toggleAutoClicker(event) {
 function toggleFingering(event) {
 	var value = enableFingering;
 
-	w.CSceneGame.prototype.ClearNewPlayer = function(){};
+	window.CSceneGame.prototype.ClearNewPlayer = function(){};
 
 	if(!getScene().m_spriteFinger) {
-		w.WebStorage.SetLocal('mg_how2click', 0);
+		window.WebStorage.SetLocal('mg_how2click', 0);
 		getScene().CheckNewPlayer();
-		w.WebStorage.SetLocal('mg_how2click', 1);
+		window.WebStorage.SetLocal('mg_how2click', 1);
 	}
 
 	if(event !== undefined) {
@@ -1187,19 +1187,19 @@ function toggleRenderer(event) {
 		value = disableRenderer = handleCheckBox(event);
 	}
 
-	var ticker = w.PIXI.ticker.shared;
+	var ticker = window.PIXI.ticker.shared;
 
 	if (!value) {
 		ticker.autoStart = true;
 		ticker.start();
 
-		w.g_Minigame.Render = trt_oldRender;
-		w.g_Minigame.Render();
+		window.g_Minigame.Render = trt_oldRender;
+		window.g_Minigame.Render();
 	} else {
 		ticker.autoStart = false;
 		ticker.stop();
 
-		w.g_Minigame.Render = function() {};
+		window.g_Minigame.Render = function() {};
 	}
 }
 
@@ -1216,7 +1216,7 @@ function autoRefreshHandler() {
 		var enemyType = enemyData.type;
 		if(enemyType != ENEMY_TYPE.BOSS) {
 			advLog('Refreshing, not boss', 5);
-			w.location.reload(true);
+			window.location.reload(true);
 		}else {
 			advLog('Not refreshing, A boss!', 5);
 			setTimeout(autoRefreshHandler, 3000);
@@ -1332,8 +1332,8 @@ function estimateJumps() {
 	var wormholesNow = 0;
 	//Gather total wormholes active.
 	for (var i = 0; i <= 2; i++) {
-		if (typeof w.g_Minigame.m_CurrentScene.m_rgLaneData[i].abilities[26] !== 'undefined') {
-			wormholesNow += w.g_Minigame.m_CurrentScene.m_rgLaneData[i].abilities[26];
+		if (typeof window.g_Minigame.m_CurrentScene.m_rgLaneData[i].abilities[26] !== 'undefined') {
+			wormholesNow += window.g_Minigame.m_CurrentScene.m_rgLaneData[i].abilities[26];
 		}
 	}
 	//During baws round fc
@@ -1364,7 +1364,7 @@ function lockElements() {
 		getScene().m_rgPlayerTechTree.damage_multiplier_earth
 	];
 
-	var elem = (parseInt(w.g_steamID.slice(-3), 10) + parseInt(w.g_GameID, 10)) % 4;
+	var elem = (parseInt(window.g_steamID.slice(-3), 10) + parseInt(window.g_GameID, 10)) % 4;
 
 	// If more than two elements are leveled to 3 or higher, do not enable lock
 	var leveled = 0;
@@ -1408,7 +1408,7 @@ function lockToElement(element) {
 }
 
 function displayText(x, y, strText, color) {
-	var text = new w.PIXI.Text(strText, {font: "35px 'Press Start 2P'", fill: color, stroke: '#000', strokeThickness: 2 });
+	var text = new window.PIXI.Text(strText, {font: "35px 'Press Start 2P'", fill: color, stroke: '#000', strokeThickness: 2 });
 
 	text.x = x;
 	text.y = y;
@@ -1416,11 +1416,11 @@ function displayText(x, y, strText, color) {
 	getScene().m_containerUI.addChild( text );
 	text.container = getScene().m_containerUI;
 
-	var e = new w.CEasingSinOut( text.y, -200, 1000 );
+	var e = new window.CEasingSinOut( text.y, -200, 1000 );
 	e.parent = text;
 	text.m_easeY = e;
 
-	e = new w.CEasingSinOut( 2, -2, 1000 );
+	e = new window.CEasingSinOut( 2, -2, 1000 );
 	e.parent = text;
 	text.m_easeAlpha = e;
 
@@ -1437,10 +1437,10 @@ function updatePlayersInGame() {
 }
 
 function fixActiveCapacityUI() {
-	w.$J('.tv_ui').css('background-image', 'url(//i.imgur.com/9R0436k.gif)');
-	w.$J('#activeinlanecontainer').css('height', '154px');
-	w.$J('#activitycontainer').css('height', '270px');
-	w.$J('#activityscroll').css('height', '270px');
+	window.$J('.tv_ui').css('background-image', 'url(//i.imgur.com/9R0436k.gif)');
+	window.$J('#activeinlanecontainer').css('height', '154px');
+	window.$J('#activitycontainer').css('height', '270px');
+	window.$J('#activityscroll').css('height', '270px');
 }
 
 function goToLaneWithBestTarget(level) {
@@ -1900,7 +1900,7 @@ function useAbilities(level)
 
 function attemptRespawn() {
 	if ((getScene().m_bIsDead) && ((getScene().m_rgPlayerData.time_died) + 5) < (getScene().m_nTime)) {
-		w.RespawnPlayer();
+		window.RespawnPlayer();
 	}
 }
 
@@ -2071,38 +2071,38 @@ function advLog(msg, lvl) {
 	}
 }
 
-if(w.SteamDB_Minigame_Timer) {
-	w.clearInterval(w.SteamDB_Minigame_Timer);
+if(window.SteamDB_Minigame_Timer) {
+	window.clearInterval(window.SteamDB_Minigame_Timer);
 }
 
-w.SteamDB_Minigame_Timer = w.setInterval(function(){
-	if (w.g_Minigame
+window.SteamDB_Minigame_Timer = window.setInterval(function(){
+	if (window.g_Minigame
 		&& getScene().m_bRunning
 		&& getScene().m_rgPlayerTechTree
 		&& getScene().m_rgGameData) {
-		w.clearInterval(w.SteamDB_Minigame_Timer);
+		window.clearInterval(window.SteamDB_Minigame_Timer);
 	firstRun();
-	w.SteamDB_Minigame_Timer = w.setInterval(MainLoop, 1000);
+	window.SteamDB_Minigame_Timer = window.setInterval(MainLoop, 1000);
 }
 }, 1000);
 
 // reload page if game isn't fully loaded, regardless of autoRefresh setting
-w.setTimeout(function() {
+window.setTimeout(function() {
 	// m_rgGameData is 'undefined' if stuck at 97/97 or below
-	if (!w.g_Minigame
-		|| !w.g_Minigame.m_CurrentScene
-		|| !w.g_Minigame.m_CurrentScene.m_rgGameData) {
-		w.location.reload(true);
+	if (!window.g_Minigame
+		|| !window.g_Minigame.m_CurrentScene
+		|| !window.g_Minigame.m_CurrentScene.m_rgGameData) {
+		window.location.reload(true);
 }
 }, autoRefreshSecondsCheckLoadedDelay * 1000);
 
 appendBreadcrumbsTitleInfo();
 
 function enhanceTooltips() {
-	var trt_oldTooltip = w.fnTooltipUpgradeDesc;
+	var trt_oldTooltip = window.fnTooltipUpgradeDesc;
 
-	w.fnTooltipUpgradeDesc = function(context){
-		var $context = w.$J(context);
+	window.fnTooltipUpgradeDesc = function(context){
+		var $context = window.$J(context);
 		var desc = $context.data('desc');
 		var strOut = desc;
 		var multiplier = parseFloat( $context.data('multiplier') );
@@ -2112,7 +2112,7 @@ function enhanceTooltips() {
 			var currentCritMultiplier = getScene().m_rgPlayerTechTree.damage_multiplier_crit;
 			var currentCrit = getScene().m_rgPlayerTechTree.damage_per_click * currentCritMultiplier;
 			var newCrit = getScene().m_rgTuningData.player.damage_per_click * (getScene().m_rgPlayerTechTree.damage_per_click_multiplier + multiplier) * currentCritMultiplier;
-			strOut += '<br><br>Crit Click: ' + w.FormatNumberForDisplay( currentCrit ) + ' => ' + w.FormatNumberForDisplay( newCrit );
+			strOut += '<br><br>Crit Click: ' + window.FormatNumberForDisplay( currentCrit ) + ' => ' + window.FormatNumberForDisplay( newCrit );
 			break;
 			case 7: // Lucky Shot's type.
 			var currentMultiplier = getScene().m_rgPlayerTechTree.damage_multiplier_crit;
@@ -2129,9 +2129,9 @@ function enhanceTooltips() {
 			strOut += '<br>Next Level: ' + ( newMultiplier ) + 'x';
 
 			strOut += '<br><br>Damage with one crit:';
-			strOut += '<br>DPS: ' + w.FormatNumberForDisplay( currentMultiplier * dps ) + ' => ' + w.FormatNumberForDisplay( newMultiplier * dps );
-			strOut += '<br>Click: ' + w.FormatNumberForDisplay( currentMultiplier * clickDamage ) + ' => ' + w.FormatNumberForDisplay( newMultiplier * clickDamage );
-			strOut += '<br><br>Base Increased By: ' + w.FormatNumberForDisplay(multiplier) + 'x';
+			strOut += '<br>DPS: ' + window.FormatNumberForDisplay( currentMultiplier * dps ) + ' => ' + window.FormatNumberForDisplay( newMultiplier * dps );
+			strOut += '<br>Click: ' + window.FormatNumberForDisplay( currentMultiplier * clickDamage ) + ' => ' + window.FormatNumberForDisplay( newMultiplier * clickDamage );
+			strOut += '<br><br>Base Increased By: ' + window.FormatNumberForDisplay(multiplier) + 'x';
 			break;
 			case 9: // Boss Loot Drop's type
 			var bossLootChance = getScene().m_rgPlayerTechTree.boss_loot_drop_percentage * 100;
@@ -2139,7 +2139,7 @@ function enhanceTooltips() {
 			strOut += '<br><br>Boss Loot Drop Rate:';
 			strOut += '<br>Current: ' + bossLootChance.toFixed(0) + '%';
 			strOut += '<br>Next Level: ' + (bossLootChance + multiplier * 100).toFixed(0) + '%';
-			strOut += '<br><br>Base Increased By: ' + w.FormatNumberForDisplay(multiplier * 100) + '%';
+			strOut += '<br><br>Base Increased By: ' + window.FormatNumberForDisplay(multiplier * 100) + '%';
 			break;
 			default:
 			return trt_oldTooltip(context);
@@ -2148,11 +2148,11 @@ function enhanceTooltips() {
 		return strOut;
 	};
 
-	var trt_oldElemTooltip = w.fnTooltipUpgradeElementDesc;
-	w.fnTooltipUpgradeElementDesc = function (context) {
+	var trt_oldElemTooltip = window.fnTooltipUpgradeElementDesc;
+	window.fnTooltipUpgradeElementDesc = function (context) {
 		var strOut = trt_oldElemTooltip(context);
 
-		var $context = w.$J(context);
+		var $context = window.$J(context);
 		//var upgrades = getScene().m_rgTuningData.upgrades.slice(0);
 		// Element Upgrade index 3 to 6
 		var idx = $context.data('type');
@@ -2162,7 +2162,7 @@ function enhanceTooltips() {
 		if (isRecommendedElement){
 			strOut += "<br><br>This is your recommended element. Please upgrade this.";
 
-			if (w.enableElementLock){
+			if (window.enableElementLock){
 				strOut += "<br><br>Other elements are LOCKED to prevent accidentally upgrading.";
 			}
 
@@ -2224,7 +2224,7 @@ function appendBreadcrumbsTitleInfo() {
 
 	element = document.createElement('span');
 	element.className = "bc_span bc_room";
-	element.textContent = 'Room ' + w.g_GameID;
+	element.textContent = 'Room ' + window.g_GameID;
 	breadcrumbs.appendChild(element);
 
 	element = document.createElement('span');
