@@ -2273,7 +2273,7 @@ function appendBreadcrumbsTitleInfo() {
 
 	element = document.createElement('span');
 	element.className = "bc_span bc_worms";
-	element.textContent = 'Wormholes Last Jump: 0';
+	element.textContent = 'Wormhole Activity: 0';
 	breadcrumbs.appendChild(element);
 	ELEMENTS.WormholesJumped = element;
 }
@@ -2285,7 +2285,7 @@ function updateLevelInfoTitle(level)
 
 	ELEMENTS.ExpectedLevel.textContent = 'Level: ' + level + ', Levels/second: ' + levelsPerSec() + ', YOWHers: ' + (approxYOWHClients > 0 ? approxYOWHClients : '??');
 	ELEMENTS.RemainingTime.textContent = 'Remaining Time: ' + rem_time.hours + ' hours, ' + rem_time.minutes + ' minutes';
-	ELEMENTS.WormholesJumped.textContent = 'Wormholes Last Jump: ' + (skipsLastJump.toLocaleString ? skipsLastJump.toLocaleString() : skipsLastJump);
+	ELEMENTS.WormholesJumped.textContent = 'Wormholes Activity: ' + (skipsLastJump.toLocaleString ? skipsLastJump.toLocaleString() : skipsLastJump);
 }
 
 }(window));
