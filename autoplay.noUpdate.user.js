@@ -305,48 +305,60 @@ function firstRun() {
 
 		var nHighestTime = 0;
 
-		for( var i=rgLaneLog.length-1; i >= 0; i--) {
-			var rgEntry = rgLaneLog[i];
+		// Loop for trolltrack
+		if (window.enableTrollTrack) {
+			for(var i=rgLaneLog.length-1; i >= 0; i--) {
+				var rgEntry = rgLaneLog[i];
 
-			if( isNaN( rgEntry.time ) ) rgEntry.time = this.m_nActionLogTime + 1;
+				if( isNaN( rgEntry.time ) ) rgEntry.time = this.m_nActionLogTime + 1;
 
-			if( rgEntry.time <= this.m_nActionLogTime ) continue;
+				if( rgEntry.time <= this.m_nActionLogTime ) continue;
 
-			switch( rgEntry.type ) {
-				case 'ability':
-					if (window.enableTrollTrack) {
-						if ( (level % 100 !== 0 && [26].indexOf(rgEntry.ability) > -1) || (level % 100 === 0 && [10, 11, 12, 15, 20].indexOf(rgEntry.ability) > -1) ) {
-							var ele = this.m_eleUpdateLogTemplate.clone();
-							$J(ele).data('abilityid', rgEntry.ability);
-							$J('.name', ele).text(rgEntry.actor_name).attr("style", "color: red; font-weight: bold;");
-							$J('.ability', ele).text(abilities[rgEntry.ability].name + " on level " + level);
-							$J('img', ele).attr('src', g_rgIconMap['ability_' + rgEntry.ability].icon);
-
-							$J(ele).v_tooltip({tooltipClass: 'ta_tooltip', location: 'top'});
-
-							this.m_eleUpdateLogContainer[0].insertBefore(ele[0], this.m_eleUpdateLogContainer[0].firstChild);
-						
-							advLog(rgEntry.actor_name + " used " + s().m_rgTuningData.abilities[ rgEntry.ability ].name + " on level " + level, 1);
-						}
-					} else {
+				if( rgEntry.type == 'ability' ) {
+					if ( (level % 100 !== 0 && [26].indexOf(rgEntry.ability) > -1) || (level % 100 === 0 && [10, 11, 12, 15, 20].indexOf(rgEntry.ability) > -1) ) {
 						var ele = this.m_eleUpdateLogTemplate.clone();
 						$J(ele).data('abilityid', rgEntry.ability);
-						$J('.name', ele).text(rgEntry.actor_name);
-						$J('.ability', ele).text(abilities[rgEntry.ability].name);
+						$J('.name', ele).text(rgEntry.actor_name).attr("style", "color: red; font-weight: bold;");
+						$J('.ability', ele).text(abilities[rgEntry.ability].name + " on level " + level);
 						$J('img', ele).attr('src', g_rgIconMap['ability_' + rgEntry.ability].icon);
 
 						$J(ele).v_tooltip({tooltipClass: 'ta_tooltip', location: 'top'});
 
 						this.m_eleUpdateLogContainer[0].insertBefore(ele[0], this.m_eleUpdateLogContainer[0].firstChild);
+						
+						advLog(rgEntry.actor_name + " used " + s().m_rgTuningData.abilities[ rgEntry.ability ].name + " on level " + level, 1);
 					}
-					break;
-				default:
-					console.log("Unknown action log type: %s", rgEntry.type);
-					console.log(rgEntry);
+				}
+
+				if(rgEntry.time > nHighestTime) nHighestTime = rgEntry.time;
 			}
 
-			if(rgEntry.time > nHighestTime) nHighestTime = rgEntry.time;
+		// Non-trolltrack
+		} else {
+
+			for(var i=rgLaneLog.length-1; i >= 0; i--) {
+				var rgEntry = rgLaneLog[i];
+
+				if( isNaN( rgEntry.time ) ) rgEntry.time = this.m_nActionLogTime + 1;
+
+				if( rgEntry.time <= this.m_nActionLogTime ) continue;
+
+				if( rgEntry.type == 'ability' ) {
+					var ele = this.m_eleUpdateLogTemplate.clone();
+					$J(ele).data('abilityid', rgEntry.ability);
+					$J('.name', ele).text(rgEntry.actor_name);
+					$J('.ability', ele).text(abilities[rgEntry.ability].name);
+					$J('img', ele).attr('src', g_rgIconMap['ability_' + rgEntry.ability].icon);
+
+					$J(ele).v_tooltip({tooltipClass: 'ta_tooltip', location: 'top'});
+
+					this.m_eleUpdateLogContainer[0].insertBefore(ele[0], this.m_eleUpdateLogContainer[0].firstChild);
+				}
+
+				if(rgEntry.time > nHighestTime) nHighestTime = rgEntry.time;
+			}
 		}
+		
 
 		if( nHighestTime > this.m_nActionLogTime ) this.m_nActionLogTime = nHighestTime;
 
@@ -1217,19 +1229,12 @@ function autoRefreshPage(autoRefreshMinutes){
 }
 
 function autoRefreshHandler() {
-	var enemyData = s().GetEnemy(s().m_rgPlayerData.current_lane, s().m_rgPlayerData.target).m_data;
-	if(typeof enemyData !== "undefined"){
-		var enemyType = enemyData.type;
-		if(enemyType != ENEMY_TYPE.BOSS) {
-			advLog('Refreshing, not boss', 5);
-			w.location.reload(true);
-		}else {
-			advLog('Not refreshing, A boss!', 5);
-			setTimeout(autoRefreshHandler, 3000);
-		}
-	}else{
-		//Wait until it is defined
-		setTimeout(autoRefreshHandler, 1000);
+	if(lastLevelTimeTaken[1].level % 100 == 0) {
+		advLog('Not refreshing (boss level)', 5);
+		setTimeout(autoRefreshHandler, 3000);
+	} else {
+		advLog('Refreshing (not a boss level)', 5);
+		w.location.reload(true);
 	}
 }
 
