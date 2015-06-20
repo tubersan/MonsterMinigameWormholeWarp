@@ -202,17 +202,13 @@ function firstRun() {
 	trt_oldPush = getScene().m_rgClickNumbers.push;
 	trt_oldRender = window.g_Minigame.Render;
 
-	toggleFingering();
-
 	if(enableElementLock) {
 		lockElements();
 	}
 
 	if (enableAutoRefresh) {
 		autoRefreshPage(autoRefreshMinutes);
-	}
-
-	toggleRenderer();
+	}	
 
 	// disable particle effects - this drastically reduces the game's memory leak
 	disableParticles();
@@ -241,11 +237,9 @@ function firstRun() {
 		// Align abilities to the left
 		"#abilitiescontainer {text-align: left;}",
 		// Activitylog and ability list
-		"#activeinlanecontainer:hover {height: auto; background: rgba(50,50,50,0.9); padding-bottom: 10px; position:absolute; z-index: 1;}",
+		"#activeinlanecontainer:hover {height: auto; background: transparent; padding-bottom: 10px; position:absolute; z-index: 1;}",
 		"#activeinlanecontainer:hover + #activitylog {margin-top: 88px;}",
 		"#activitylog {margin-top: 20px}",
-		// Hide leave game button
-		".leave_game_btn {display: none;}",
 		// Option menu
 		".game_options {height: auto;}",
 		".game_options .toggle_sfx_btn {margin: 6px 7px 0px 2px; float: right;}",
@@ -256,7 +250,7 @@ function firstRun() {
 		".options_column label {display: inline-block;}",
 		".options_column input {float: left;}",
 		".options_column input[type=number] {margin: 6px 5px 0 0; padding: 2px 0px 0px 4px;}",
-		".options_column input[name=setLogLevel] {width: 25px;}",
+		".options_column input[id=logLevelInput] {width: 25px;}",
 		".options_column span.asterisk {line-height: 14px;}",
 		// Element lock box
 		".lock_elements_box {width: 165px; top: -76px; left: 303px; box-sizing: border-box; line-height: 1rem; padding: 7px 10px; position: absolute; color: #EDEDED;}",
@@ -349,7 +343,10 @@ function firstRun() {
 	};
 
 	// Add cool background
-	$J('body.flat_page.game').css('background-image', 'url(http://i.imgur.com/P8TB236.jpg)');
+	$J('body.flat_page.game').css({
+		'background-image': 'url(http://i.imgur.com/P8TB236.jpg)',
+		'background-repeat': 'repeat',
+	});
 
 	// Add "players in game" label
 	var titleActivity = document.querySelector( '.title_activity' );
@@ -358,52 +355,338 @@ function firstRun() {
 	titleActivity.insertBefore(playersInGame, titleActivity.firstChild);
 	ELEMENTS.PlayersInGame = document.getElementById("players_in_game");
 
-	var info_box = document.querySelector(".leave_game_helper");
-	info_box.className = "options_box";
-	var options_menu = document.querySelector(".game_options");
-	var sfx_btn = document.querySelector(".toggle_sfx_btn");
-	options_menu.insertBefore(info_box, sfx_btn);
-
-	info_box.innerHTML = '<b>OPTIONS</b>' + ((typeof GM_info !== "undefined") ? ' (v' + GM_info.script.version + ')' : '') + '<br>Settings marked with a <span class="asterisk">*</span> requires a refresh to take effect.<hr>';
-
-	var options1 = document.createElement("div");
-	options1.className = "options_column";
-
-	options1.appendChild(makeCheckBox("removeInterface", "Remove interface", removeInterface, handleEvent, true));
-	options1.appendChild(makeCheckBox("removeParticles", "Remove particle effects", removeParticles, handleEvent, true));
-	options1.appendChild(makeCheckBox("removeFlinching", "Remove flinching effects", removeFlinching, handleEvent, true));
-	options1.appendChild(makeCheckBox("removeCritText", "Remove crit text", removeCritText, toggleCritText, false));
-	options1.appendChild(makeCheckBox("removeAllText", "Remove all text", removeAllText, toggleAllText, false));
-	options1.appendChild(makeCheckBox("disableRenderer", "Limit frames per second to increase performance", disableRenderer, toggleRenderer, false));
-
-	info_box.appendChild(options1);
-
-	var options2 = document.createElement("div");
-	options2.className = "options_column";
-
-	if (typeof GM_info !== "undefined") {
-		options2.appendChild(makeCheckBox("enableAutoRefresh", "Enable AutoRefresh (mitigate memory leak)", enableAutoRefresh, toggleAutoRefresh, false));
-	}
-
-	options2.appendChild(makeCheckBox("enableFingering", "Enable targeting pointer", enableFingering, toggleFingering, false));
-	options2.appendChild(makeCheckBox("enableTrollTrack", "Enable tracking trolls", enableTrollTrack, toggleTrackTroll, false));
-	options2.appendChild(makeNumber("setLogLevel", "Change the log level (you shouldn't need to touch this)", logLevel, 0, 5, updateLogLevel));
-
-	info_box.appendChild(options2);
-
-	//Elemental upgrades lock
-	var ab_box = document.getElementById("abilities");
-	var lock_elements_box = document.createElement("div");
-	lock_elements_box.className = "lock_elements_box";
-	lock_elements_box.title = "To maximise team damage players should max only one element. But distributions of elements through people should be equal. So we calculated your element using your unique ID. Upgrade your element to make maximum performance or disable this checkbox.";
-	var lock_elements_checkbox = makeCheckBox("enableElementLock", "Lock element upgrades for more team dps", enableElementLock, toggleElementLock, false);
-	lock_elements_box.appendChild(lock_elements_checkbox);
-	ab_box.appendChild(lock_elements_box);
-
 	enhanceTooltips();
 	addIRCLink();
+	addExtraUI();
 
+	//Enable Pointer
+	var value = enableFingering;
+
+	window.CSceneGame.prototype.ClearNewPlayer = function(){};
+
+	if(!getScene().m_spriteFinger) {
+		window.WebStorage.SetLocal('mg_how2click', 0);
+		getScene().CheckNewPlayer();
+		window.WebStorage.SetLocal('mg_how2click', 1);
+	}
+
+	if(event !== undefined) {
+		value = handleCheckBox(event);
+	}
+
+	if(value) {
+		getScene().m_containerParticles.addChild(getScene().m_spriteFinger);
+	} else {
+		getScene().m_containerParticles.removeChild(getScene().m_spriteFinger);
+	}
+	document.getElementById('newplayer').style.display = 'none';
+	
+	updateToggle("pointer", enableFingering);
+	
+	
+	//Initial disable of renderer
+	var ticker = window.PIXI.ticker.shared;
+
+	if (!value) {
+		ticker.autoStart = true;
+		ticker.start();
+
+		window.g_Minigame.Render = trt_oldRender;
+		window.g_Minigame.Render();
+	} else {
+		ticker.autoStart = false;
+		ticker.stop();
+
+		window.g_Minigame.Render = function() {};
+	}
+	updateToggle("limitFPS", disableRenderer);
+	
 	isPastFirstRun = true;
+}
+
+function addExtraUI() {
+	
+	//Add settings div
+	$J("#gamecontainer").append('<div id="settings"></div>');
+	
+	$J('#settings').css({
+		"position": "absolute",
+		"background": "url('https://raw.githubusercontent.com/ensingm2/SteamMonsterGameScript/master/img/settings.png')",
+		"background-repeat": "no-repeat",
+		"background-position": "0px 0px",
+		"height": "300px",
+		"width": "500px",
+		"margin-top": "2px",
+		"bottom": "-65px",
+		"right": "10px",
+		"padding-top": "15px",
+		"padding-left": "12px"
+	});
+
+	//Bring the close button back
+	$J('<div class="leave_game_btn">Close Game</div>').insertAfter("#settings");
+	$J(".leave_game_btn").css({
+		"width": "120px",
+		"position": "absolute",
+		"bottom": "90px",
+		"z-index": "12",
+		"left": "335px",
+		"border": "5px solid grey",
+		"border-radius": "5px",
+		"background-color": "black",
+		"height": "35px",
+		"text-align": "center",
+		"cursor": "pointer",
+		"font-family": "'Press Start 2P', \"Lucida Console\", Consolas, Arial",
+		"color": "white"
+	});
+	$J('.leave_game_btn').click(function() {
+		window.location = 'http://steamcommunity.com/minigame/';
+	});
+	
+	$J('<div class="leave_game_helper">You can safely close the game or leave this screen at any time—you will continue collecting gold and damaging monsters even while away from your computer. Check back occasionally to see how you\'re doing and use in-game gold to purchase upgrades.</div>').insertAfter("#settings");
+	$J(".leave_game_helper").css({
+		"left": "150px",
+		"top": "initial",
+		"bottom": "-20px",
+		"z-index": "13"
+	});
+	
+	$J("#settings").append('<div id="music_toggle" class="toggle"><span class="value disabled"></span><span class="title">Music: </span></div>');
+	$J("#settings").append('<div id="sfx_toggle" class="toggle"><span class="value disabled"></span><span class="title">SFX: </span></div>');
+	$J("#settings").append('<div id="interface_toggle" class="toggle"><span class="value disabled"></span><span class="title">Interface*:  </span></div>');
+	$J("#settings").append('<div id="particle_toggle" class="toggle"><span class="value disabled"></span><span class="title">Particles*: </span></div>');
+	$J("#settings").append('<div id="flinching_toggle" class="toggle"><span class="value disabled"></span><span class="title">Flinching*: </span></div>');
+	$J("#settings").append('<div id="critText_toggle" class="toggle"><span class="value enabled"></span><span class="title">Crit Text: </span></div>');
+	$J("#settings").append('<div id="allText_toggle" class="toggle"><span class="value enabled"></span><span class="title">All Text: </span></div>');
+	$J("#settings").append('<div id="limitFPS_toggle" class="toggle"><span class="value enabled"></span><span class="title">Limit FPS: </span></div>');
+	$J("#settings").append('<div id="pointer_toggle" class="toggle"><span class="value enabled"></span><span class="title">Targetting Pointer: </span></div>');
+	$J("#settings").append('<div id="trollTracker_toggle" class="toggle"><span class="value disabled"></span><span class="title">Troll Tracking: </span></div>');
+	$J("#settings").append('<div id="elementLock_toggle" class="toggle"><span class="value enabled"></span><span class="title">Element Locking: </span></div>');
+	
+	$J("#settings").append('<div><span class="toggle">Lock Level: <input type="number" id="logLevelInput" value="'+logLevel+'" min=0 max=5></input></span></div>');
+	
+	$J("#logLevelInput").change(function() {
+		logLevel = $J('#logLevelInput').val();
+	});
+	
+	//Prevent propagation back to container slider
+	$J("#logLevelInput").click(function(event) {
+		Event.stop(event);
+	});
+	
+	//makeNumber("setLogLevel", "Log Level:", logLevel, 0, 5, updateLogLevel)
+	//$J("#settings").append('<div id="" class="toggle"><span class="value enabled"></span><span class="title">Log Level: </span></div>');
+	
+	$J("#settings").append('<div><span class="toggle" style="margin-left: 25px; color: red">* - Restart Required</span></div>');
+	
+	$J("#sfx_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleSFX(true);
+	});
+	
+	$J("#music_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleMusic(true);
+	});
+	
+	$J("#interface_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleInterface(true);
+	});
+	$J("#particle_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleParticles(true);
+	});
+	
+	$J("#flinching_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleFlinching(true);
+	});
+	
+	$J("#critText_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleCritText();
+	});
+	
+	$J("#allText_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleAllText();
+	});
+	
+	$J("#limitFPS_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleRenderer();
+	});
+	
+	$J("#pointer_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleFingering();
+	});
+	
+	$J("#trollTracker_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleTrackTroll();
+	});
+	
+	$J("#elementLock_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleElementLock();
+	});
+	
+	// We force update the icon once to sync with active settings
+	updateToggle("sfx", !WebStorage.GetLocal('minigame_mute'));
+	updateToggle("music", !WebStorage.GetLocal('minigame_mutemusic'));
+	updateToggle("interface", !removeInterface);
+	updateToggle("particle", !removeParticles);
+	updateToggle("flinching", !removeFlinching);
+
+	// Slide the settings panel out on click
+	$J("#settings").click(function() {
+		var op = $J("#settings");
+		op.animate({
+			bottom: parseInt(op.css('bottom'), 10) == -65 ? -op.outerHeight() : -65
+		});
+	});
+
+	//Statistics
+	$J("#gamecontainer").append('<div id="statistics"></div>');
+	$J('#statistics').css({
+		"position": "absolute",
+		"background": "url('https://raw.githubusercontent.com/ensingm2/SteamMonsterGameScript/master/img/stats.png')",
+		"background-repeat": "no-repeat",
+		"background-position": "0px 0px",
+		"height": "250px",
+		"width": "500px",
+		"margin-top": "2px",
+		"bottom": "-65px",
+		"left": "10px",
+		"padding-top": "15px",
+		"padding-left": "25px"
+	});
+
+	//Add in stats
+	$J("#statistics").append('<div id="stat_player_dpc" class="stat"><span class="title">Dmg Per Click: </span><span class="value">0</span></div>');
+	$J("#statistics").append('<div id="stat_player_dps" class="stat"><span class="title">Dmg Per Second: </span><span class="value">0</span></div>');
+	$J("#statistics").append('<div id="stat_player_crit" class="stat"><span class="title">Critical Chance: </span><span class="value">0</span></div>');
+	$J("#statistics").append('<div id="stat_crit_mul" class="stat"><span class="title">Critical Dmg Multiplier: </span><span class="value">0</span></div>');
+	$J("#statistics").append('<div id="stat_elemental_mul" class="stat"><span class="title">Elemental Multiplier: </span><span class="value">0</span></div>');
+	$J("#statistics").append('<div id="stat_elemental_dpc" class="stat"><span class="title">Elemental DPC: </span><span class="value">0</span></div>');
+	$J("#statistics").append('<div id="stat_elemental_dps" class="stat"><span class="title">Elemental DPS: </span><span class="value">0</span></div>');
+	$J("#statistics").append('<div id="stat_boss_loot" class="stat"><span class="title">Boss Loot Chance: </span><span class="value">0</span></div>');
+
+	$J("#footer_spacer").css({
+		"height": "175px"
+	});
+	$J("canvas").css({
+		"position": "relative",
+		"z-index": "5"
+	});
+	$J("#uicontainer").css({
+		"z-index": "6"
+	});
+	
+	//Update stats
+	setInterval(function() {
+		function getElementalMul() {
+			return Math.max(g_Minigame.m_CurrentScene.m_rgPlayerTechTree.damage_multiplier_air, g_Minigame.m_CurrentScene.m_rgPlayerTechTree.damage_multiplier_earth, g_Minigame.m_CurrentScene.m_rgPlayerTechTree.damage_multiplier_fire, g_Minigame.m_CurrentScene.m_rgPlayerTechTree.damage_multiplier_water);
+		}
+		$J("#statistics #stat_player_dpc .value").html(FormatNumberForDisplay(g_Minigame.m_CurrentScene.m_rgPlayerTechTree.damage_per_click, 5));
+		$J("#statistics #stat_player_dps .value").html(FormatNumberForDisplay(g_Minigame.m_CurrentScene.m_rgPlayerTechTree.damage_per_click * clickRate, 5));
+		$J("#statistics #stat_player_crit .value").html(FormatNumberForDisplay(Math.round(g_Minigame.m_CurrentScene.m_rgPlayerTechTree.crit_percentage * 100), 5) + "%");
+		$J("#statistics #stat_crit_mul .value").html(FormatNumberForDisplay(g_Minigame.m_CurrentScene.m_rgPlayerTechTree.damage_multiplier_crit, 5) + "x");
+		$J("#statistics #stat_elemental_mul .value").html(FormatNumberForDisplay(getElementalMul()) + "x");
+		$J("#statistics #stat_elemental_dpc .value").html(FormatNumberForDisplay(getElementalMul() * g_Minigame.m_CurrentScene.m_rgPlayerTechTree.damage_per_click, 5));
+		$J("#statistics #stat_elemental_dps .value").html(FormatNumberForDisplay(getElementalMul() * g_Minigame.m_CurrentScene.m_rgPlayerTechTree.damage_per_click * clickRate, 5));
+		$J("#statistics #stat_boss_loot .value").html(FormatNumberForDisplay(Math.round(g_Minigame.m_CurrentScene.m_rgPlayerTechTree.boss_loot_drop_percentage * 100, 5)) + "%");
+	}, 1000);
+
+	$J("#statistics").click(function() {
+		var op = $J("#statistics");
+		op.animate({
+			bottom: parseInt(op.css('bottom'), 10) == -65 ? -op.outerHeight() : -65
+		});
+	});
+
+	//Smack the TV Easter Egg
+	$J('<div style="height: 52px; position: absolute; bottom: 85px; left: 828px; z-index: 12;" onclick="SmackTV();"><br><br><span style="font-size:10px; padding: 12px; color: gold;">Smack TV</span></div>').insertBefore('#row_bottom');
+
+	//Remove unneeded options area 
+	$J(".game_options").remove();
+
+	//Hide the stupid "Leave game" tooltip
+	$J('.leave_game_btn').mouseover(function() {
+			$J('.leave_game_helper').show();
+		})
+		.mouseout(function() {
+			$J('.leave_game_helper').hide();
+		});
+	$J('.leave_game_helper').hide(); 
+
+	
+	//Custom CSS
+	var css = "";
+	css += "#settings .toggle { position: relative; margin-top: 10px; width: 30%; height: 32px; z-index: 0; float: left; margin-left: 10px;} ";
+	css += "#settings span.title { position: relative; top: 10px; float: right; right:15px; text-align:right; width: 80%;} ";
+	css += "#settings span.value { position: relative; float: right; right:10px; display: inline-block; z-index:11; cursor: pointer;} ";
+	css += "#settings span.value.enabled { background: url('https://raw.githubusercontent.com/ensingm2/SteamMonsterGameScript/master/img/icons.png'); background-repeat: no-repeat;background-position:0px 0px;width:30px;height:30px; } ";
+	css += "#settings span.value.enabled:hover { background: url('https://raw.githubusercontent.com/ensingm2/SteamMonsterGameScript/master/img/icons.png'); background-repeat: no-repeat;background-position:-30px 0px;width:30px;height:30px; } ";
+	css += "#settings span.value.disabled { background: url('https://raw.githubusercontent.com/ensingm2/SteamMonsterGameScript/master/img/icons.png'); background-repeat: no-repeat;background-position:0px -30px;width:30px;height:32px; } ";
+	css += "#settings span.value.disabled:hover { background: url('https://raw.githubusercontent.com/ensingm2/SteamMonsterGameScript/master/img/icons.png'); background-repeat: no-repeat;background-position:-30px -30px;width:30px;height:32px; } ";
+
+	css += "#statistics .stat { position: relative; margin-top: 5px; width: 40%; height: 32px; z-index: 0; margin-left: 25px; float:left;} ";
+	css += "#statistics span.value { position: relative; float: right; margin-right: 30px; text-align: right; width: 100%;} ";
+	css += "#statistics span.title { position: relative; width: 100%; font-weight: bold;} ";
+
+	css += ".toggle_btn {background: #d6d6d6;-webkit-border-radius: 7; -moz-border-radius: 7; border-radius: 7px; color: #333; text-decoration: none; text-align: center;cursor: pointer;font-weight: bold;} ";
+	css += ".toggle_btn:hover { background: #85c8f2; text-decoration: none; color: #fff;cursor: pointer;font-weight: bold;} ";
+	css += "#activeinlanecontainer:hover {border-radius: 7px; border: 2px red;height:auto;background-color: black;padding-bottom:10px;position:absolute;z-index:1} #activeinlanecontainer:hover ~ #activitylog {margin-top:97px} #activitylog {margin-top: 29px} ";
+	css += "#leaderboard_wrapper {overflow: hidden; height: 360px; width: 261px; position: relative; margin: 50px 0px 0px 5px; padding: 5px;} #activeinlanecontainer:hover ~ #leaderboard_wrapper {margin-top: 118px}";
+	css += "#info_hp { position:relative; top:28px; text-align: center;}";
+	css += "#irc_join {position: relative; width: 175px; height: 30px; top: -50px; left: 30px; cursor: pointer;}";
+	css += ".arrow {font-weight: bold; background-color: #bebebe; width: 20px; color: #434340; border-radius: 7px; float: right; text-align: center; margin-top: -2px; margin-left: 10px; }";
+	$J('head').append('<style>' + css + '</style>');
+	
+	// Put the page footer behind settings
+	$J("#footer").css('z-index', -1);
+}
+
+function toggleInterface() {
+	removeInterface = !removeInterface;
+	setPreference("removeInterface", removeInterface);
+	updateToggle("interface", removeInterface);
+}
+
+function toggleParticles() {
+	removeParticles = !removeParticles;
+	setPreference("removeParticles", removeParticles);
+	updateToggle("particle", removeParticles);
+}
+
+function toggleFlinching() {
+	removeFlinching = !removeFlinching;
+	setPreference("removeFlinching", removeFlinching);
+	updateToggle("flinching", removeFlinching);
+}
+
+function updateToggle(id, enabled) {
+	if (enabled) {
+		$J("#" + id + "_toggle span.value").removeClass("disabled").addClass("enabled");
+	} else {
+		$J("#" + id + "_toggle span.value").removeClass("enabled").addClass("disabled");
+	}
+}
+
+function toggleSFX() {
+	WebStorage.SetLocal('minigame_mute', !WebStorage.GetLocal('minigame_mute'));
+		
+	updateToggle("sfx", !WebStorage.GetLocal('minigame_mute'));
+}
+
+function toggleMusic() {
+	g_AudioManager.ToggleMusic();
+	
+	updateToggle("music", !WebStorage.GetLocal('minigame_mutemusic'));
 }
 
 function disableParticles() {
@@ -1065,73 +1348,33 @@ function makeNumber(name, desc, value, min, max, listener) {
 	return label;
 }
 
-	function makeDropdown(name, desc, value, values, listener) {
-		var label = document.createElement("label");
-		var description = document.createTextNode(desc);
-		var drop = document.createElement("select");
-
-		for(var k in values) {
-			var choice = document.createElement("option");
-			choice.value = values[k];
-			choice.textContent = k;
-			if(values[k] == value) {
-				choice.selected = true;
-			}
-			drop.appendChild(choice);
-		}
-
-		drop.name = name;
-		drop.style.marginRight = "5px";
-		drop.onchange = listener;
-
-		label.appendChild(drop);
-		label.appendChild(description);
-		label.appendChild(document.createElement("br"));
-		return label;
-	}
-
-function makeCheckBox(name, desc, state, listener, reqRefresh) {
-	var asterisk = document.createElement('span');
-	asterisk.className = "asterisk";
-	asterisk.appendChild(document.createTextNode("*"));
-
+function makeDropdown(name, desc, value, values, listener) {
 	var label = document.createElement("label");
 	var description = document.createTextNode(desc);
-	var checkbox = document.createElement("input");
+	var drop = document.createElement("select");
 
-	checkbox.type = "checkbox";
-	checkbox.name = name;
-	checkbox.checked = state;
-	checkbox.onclick = listener;
-	window[checkbox.name] = checkbox.checked;
-
-	label.appendChild(checkbox);
-	label.appendChild(description);
-	if(reqRefresh) {
-		label.appendChild(asterisk);
+	for(var k in values) {
+		var choice = document.createElement("option");
+		choice.value = values[k];
+		choice.textContent = k;
+		if(values[k] == value) {
+			choice.selected = true;
+		}
+		drop.appendChild(choice);
 	}
+
+	drop.name = name;
+	drop.style.marginRight = "5px";
+	drop.onchange = listener;
+
+	label.appendChild(drop);
+	label.appendChild(description);
 	label.appendChild(document.createElement("br"));
 	return label;
 }
 
-function handleEvent(event) {
-	handleCheckBox(event);
-}
-
-function handleCheckBox(event) {
-	var checkbox = event.target;
-	setPreference(checkbox.name, checkbox.checked);
-
-	window[checkbox.name] = checkbox.checked;
-	return checkbox.checked;
-}
-
-function toggleAutoClicker(event) {
-	var value = enableAutoClicker;
-
-	if(event !== undefined) {
-		value = handleCheckBox(event);
-	}
+function toggleAutoClicker() {
+	var value = enableAutoClicker = !enableAutoClicker;
 
 	if(value) {
 		currentClickRate = clickRate;
@@ -1140,8 +1383,8 @@ function toggleAutoClicker(event) {
 	}
 }
 
-function toggleFingering(event) {
-	var value = enableFingering;
+function toggleFingering() {
+	var value = enableFingering = !enableFingering;
 
 	window.CSceneGame.prototype.ClearNewPlayer = function(){};
 
@@ -1151,24 +1394,18 @@ function toggleFingering(event) {
 		window.WebStorage.SetLocal('mg_how2click', 1);
 	}
 
-	if(event !== undefined) {
-		value = handleCheckBox(event);
-	}
-
 	if(value) {
 		getScene().m_containerParticles.addChild(getScene().m_spriteFinger);
 	} else {
 		getScene().m_containerParticles.removeChild(getScene().m_spriteFinger);
 	}
 	document.getElementById('newplayer').style.display = 'none';
+	
+	updateToggle("pointer", enableFingering);
 }
 
-function toggleAutoRefresh(event) {
-	var value = enableAutoRefresh;
-
-	if(event !== undefined) {
-		value = handleCheckBox(event);
-	}
+function toggleAutoRefresh() {
+	var value = enableAutoRefresh = !enableAutoRefresh;
 
 	if(value) {
 		autoRefreshPage(autoRefreshMinutes);
@@ -1177,12 +1414,8 @@ function toggleAutoRefresh(event) {
 	}
 }
 
-function toggleRenderer(event) {
-	var value = disableRenderer;
-
-	if (event !== undefined) {
-		value = disableRenderer = handleCheckBox(event);
-	}
+function toggleRenderer() {
+	var value = disableRenderer = !disableRenderer;
 
 	var ticker = window.PIXI.ticker.shared;
 
@@ -1198,6 +1431,7 @@ function toggleRenderer(event) {
 
 		window.g_Minigame.Render = function() {};
 	}
+	updateToggle("limitFPS", disableRenderer);
 }
 
 function autoRefreshPage(autoRefreshMinutes){
@@ -1224,26 +1458,20 @@ function autoRefreshHandler() {
 	}
 }
 
-function toggleElementLock(event) {
-	var value = enableElementLock;
-
-	if(event !== undefined) {
-		value = handleCheckBox(event);
-	}
+function toggleElementLock() {
+	var value = enableElementLock = !enableElementLock;
 
 	if(value) {
 		lockElements();
 	} else {
 		unlockElements();
 	}
+	
+	updateToggle("elementLock", enableElementLock);
 }
 
-function toggleCritText(event) {
-	var value = removeCritText;
-
-	if(event !== undefined) {
-		value = handleCheckBox(event);
-	}
+function toggleCritText() {
+	var value = removeCritText = !removeCritText;
 
 	if (value) {
 		// Replaces the entire crit display function.
@@ -1251,14 +1479,12 @@ function toggleCritText(event) {
 	} else {
 		getScene().DoCritEffect = trt_oldCrit;
 	}
+	
+	updateToggle("critText", value);
 }
 
 function toggleAllText(event) {
-	var value = removeAllText;
-
-	if(event !== undefined) {
-		value = handleCheckBox(event);
-	}
+	var value = removeAllText = !removeAllText;
 
 	if (value) {
 		// Replaces the entire text function.
@@ -1268,20 +1494,16 @@ function toggleAllText(event) {
 	} else {
 		getScene().m_rgClickNumbers.push = trt_oldPush;
 	}
+	
+	updateToggle("allText", value);
 }
 
-function toggleTrackTroll(event) {
-	var value = enableTrollTrack;
-
-	if(event !== undefined) {
-		value = handleCheckBox(event);
-	}
-}
-
-function updateLogLevel(event) {
-	if(event !== undefined) {
-		logLevel = event.target.value;
-	}
+function toggleTrackTroll() {
+	var value = enableTrackTroll = !enableTrollTrack;
+	
+	console.log(value);
+	
+	updateToggle("trollTracker", value);
 }
 
 function setPreference(key, value) {
@@ -2256,14 +2478,17 @@ function appendBreadcrumbsTitleInfo() {
 
 function addIRCLink() {
 	//Add in IRC link
-	$J("#row_bottom").append('<div id="irc_join"></div>');
+	$J("#info_block").append('<div id="irc_join">Join IRC channel</div>');
 	
 	$J("#irc_join").css({
-		"width": "525px",
-		"height": "56px",
-		"position": "absolute",
-		"bottom": "0px",
-		"right": "10px",
+		"width": "232px",
+		"line-height": "30px",
+		"height": "30px",
+		"position": "relative",
+		"top": "-50px",
+		"left": "0px",
+		"margin": "auto",
+		"text-align": "center",
 		"z-index": "12",
 		"cursor": "pointer",
 		"border-radius": "5px",
