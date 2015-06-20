@@ -2,7 +2,7 @@
 // @name Ye Olde Megajump [Ensingm2 Fork]
 // @namespace https://github.com/ensingm2/MonsterMinigameWormholeWarp
 // @description A script that runs the Steam Monster Minigame for you.  Now with megajump.  Brought to you by the Ye Olde Wormhole Schemers and DannyDaemonic
-// @version 6.0.8
+// @version 6.1.0
 // @match *://steamcommunity.com/minigame/towerattack*
 // @match *://steamcommunity.com//minigame/towerattack*
 // @grant none
@@ -65,6 +65,8 @@ var lastLevelTimeTaken = [{
 							timeTakenInSeconds: 0
 						 }];
 var approxYOWHClients = 0;
+var skipsLastJump = 0;
+var updateSkips = false;
 
 var trt_oldCrit = function() {};
 var trt_oldPush = function() {};
@@ -162,7 +164,7 @@ var CONTROL = {
 	speedThreshold: 2000,
 	rainingRounds: 100,
 	disableGoldRainLevels: 500,
-	rainingSafeRounds: 10
+	rainingSafeRounds: 9
 };
 
 var GAME_STATUS = {
@@ -243,7 +245,8 @@ function firstRun() {
 		// Align abilities to the left
 		"#abilitiescontainer {text-align: left;}",
 		// Activitylog and ability list
-		"#activeinlanecontainer:hover {height: auto; background: transparent; padding-bottom: 10px; position:absolute; z-index: 1;}",
+		"#activeinlanecontainer {padding-left: 10px;}",
+		"#activeinlanecontainer:hover {height: auto; background-image: radial-gradient(circle farthest-corner at 32px 0px, rgba(0,124,182,0.1), #11111C); padding-bottom: 10px; position:absolute; z-index: 1;}",
 		"#activeinlanecontainer:hover + #activitylog {margin-top: 88px;}",
 		"#activitylog {margin-top: 20px}",
 		// Option menu
@@ -261,10 +264,16 @@ function firstRun() {
 		// Element lock box
 		".lock_elements_box {width: 165px; top: -76px; left: 303px; box-sizing: border-box; line-height: 1rem; padding: 7px 10px; position: absolute; color: #EDEDED;}",
 		// Breadcrumbs
+		".breadcrumbs {color: #bbb;}",
 		".bc_span {text-shadow: 1px 1px 0px rgba( 0, 0, 0, 0.3 );}",
-		".bc_room {color: #D4E157;}",
+		".bc_room {color: #ACE191;}",
 		".bc_level {color: #FFA07A;}",
 		".bc_time {color: #9AC0FF;}",
+		".bc_worms {color: #FFF79A;}",
+		// Adjustments for hard to see areas on the new background
+		"#upgradesscroll, #activityscroll {opacity: 0.75;}",
+		".teamhealth {background: rgba( 240, 240, 255, 0.2 );}",
+		"#upgrades .title_upgrates {color: #67C;}",
 		// Always show ability count
 		".abilitytemplate > a > .abilityitemquantity {visibility: visible; pointer-events: none;}",
 		".tv_ui {background-image: url(http://i.imgur.com/vM1gTFY.gif);}",
@@ -795,9 +804,18 @@ function MainLoop() {
 
 	if (!isAlreadyRunning) {
 		isAlreadyRunning = true;
+		
+		if( level !== lastLevel ) {
+			// Clear any unsent abilities still in the queue when our level changes
+			s().m_rgAbilityQueue.clear();
+			// update skips if applicable
+			if (updateSkips) {
+				skipsLastJump = level - lastLevel;
+				updateSkips = false;
+			}
+		}
 
-		if ((level % 100 == 0) &&
-				(bHaveItem(ABILITIES.WORMHOLE) || bHaveItem(ABILITIES.LIKE_NEW) )) {
+		if (level % 100 == 0) {
 			// On a WH level, jump everyone with wormholes to lane 0, unless there is a boss there, in which case jump to lane 1.
 			var targetLane = 0;
 			// Check lane 0, enemy 0 to see if it's a boss
@@ -814,6 +832,7 @@ function MainLoop() {
 				getScene().TryChangeLane(targetLane); // put everyone in the same lane
 			}
 
+			updateSkips = true;
 		} else {
 			goToLaneWithBestTarget(level);
 		}
@@ -1111,6 +1130,11 @@ function useAbilitiesAt100() {
 	if (getAbilityItemQuantity(ABILITIES.LIKE_NEW) > 0) {
 		advLog("At level % 100 = 0, forcing the use of a like new", 2);
 		tryUsingAbility(ABILITIES.LIKE_NEW, false, true); //like new
+	} else {
+		// if people have LIKE_NEWs, there's no harm in letting them use them
+		if (Math.random() <= 0.05) {
+			tryUsingAbility(ABILITIES.LIKE_NEW, false, true);
+		}
 	}
 	
 	if (hasAbility(ABILITIES.MEDICS)) {
@@ -2486,7 +2510,7 @@ function appendBreadcrumbsTitleInfo() {
 
 	element = document.createElement('span');
 	element.className = "bc_span bc_time";
-	element.textContent = 'Remaining Time: 0 hours, 0 minutes.';
+	element.textContent = 'Remaining Time: 0 hours, 0 minutes';
 	breadcrumbs.appendChild(element);
 	ELEMENTS.RemainingTime = element;
 	
@@ -2498,6 +2522,54 @@ function appendBreadcrumbsTitleInfo() {
 		element.innerHTML = '<a target="_blank"  href="' + GM_info.script.namespace + '">' + GM_info.script.name + ' v' + GM_info.script.version + '</a>';
 		breadcrumbs.appendChild(element);
 	}
+}
+function subLong(x, y) {
+    var addLong = function(x, y) {
+        var s = '';
+        if (y.length > x.length) {
+            s = x;
+            x = y;
+            y = s;
+        }
+        s = (parseInt(x.slice(-9),10) + parseInt(y.slice(-9),10)).toString();
+        x = x.slice(0,-9); 
+        y = y.slice(0,-9);
+        if (s.length > 9) {
+            if (x === '') return s;
+            x = addLong(x, '1');
+            s = s.slice(1);
+        } else if (x.length) { while (s.length < 9) { s = '0' + s; } }
+        if (y === '') return x + s;
+        return addLong(x, y) + s; 
+    };
+	
+    var s;
+    s = (parseInt('1'+x.slice(-9),10) - parseInt(y.slice(-9),10)).toString(); 
+    x = x.slice(0,-9);
+    y = y.slice(0,-9);
+    if (s.length === 10 || x === '') {
+        s = s.slice(1);
+    } else { 
+        if (y.length) { y = addLong(y, '1'); } 
+        else { y = '1';}
+        if (x.length) { while (s.length < 9) { s = '0' + s; }}
+    }
+    if (y === '') { 
+        s = (x + s).replace(/^0+/,'');
+        return s;
+    }
+    return subLong(x, y) + s;
+}
+
+function getAccountId(id) {
+    return parseInt(subLong(''+id, '76561197960265728'));
+}
+
+function getUserName() {
+	if (g_Minigame.m_CurrentScene.m_rgPlayerNameCache) {
+		return g_Minigame.m_CurrentScene.m_rgPlayerNameCache[getAccountId(g_steamID)];
+	}
+	return "Unknown";
 }
 
 function addIRCLink() {
@@ -2521,8 +2593,18 @@ function addIRCLink() {
 	
 	$J("#irc_join").click(function(e) {
 		e.stopPropagation();
-		window.open('http://irc.lc/quakenet/YeOldeWH','_blank'); // Cant seem to find a local storing in js of the players username, so lets just take it from the dropdown
+		window.open('https://webchat.quakenet.org/?nick=' + getUserName() + '&channels=YeOldeWH','_blank'); // Cant seem to find a local storing in js of the players username, so lets just take it from the dropdown
 	});
+	
+	element = document.createElement('span');
+	element.textContent = ' > ';
+	breadcrumbs.appendChild(element);
+
+	element = document.createElement('span');
+	element.className = "bc_span bc_worms";
+	element.textContent = 'Wormhole Activity: 0';
+	breadcrumbs.appendChild(element);
+	ELEMENTS.WormholesJumped = element;
 }
 
 function updateLevelInfoTitle(level)
@@ -2531,7 +2613,8 @@ function updateLevelInfoTitle(level)
 	var rem_time = countdown(exp_lvl.remaining_time);
 
 	ELEMENTS.ExpectedLevel.textContent = 'Level: ' + level + ', Levels/second: ' + levelsPerSec() + ', YOWHers: ' + (approxYOWHClients > 0 ? approxYOWHClients : '??');
-	ELEMENTS.RemainingTime.textContent = 'Remaining Time: ' + rem_time.hours + ' hours, ' + rem_time.minutes + ' minutes.';
+	ELEMENTS.RemainingTime.textContent = 'Remaining Time: ' + rem_time.hours + ' hours, ' + rem_time.minutes + ' minutes';
+	ELEMENTS.WormholesJumped.textContent = 'Wormholes Activity: ' + (skipsLastJump.toLocaleString ? skipsLastJump.toLocaleString() : skipsLastJump);
 }
 
 function abilityCooldown(abilityID) {
