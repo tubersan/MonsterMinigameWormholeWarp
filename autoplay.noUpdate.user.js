@@ -2257,9 +2257,11 @@ function addIRCLink() {
 		"height": "56px",
 		"position": "absolute",
 		"bottom": "0px",
-		"right": "0px",
+		"right": "10px",
 		"z-index": "12",
 		"cursor": "pointer",
+		"border-radius": "5px",
+		"border": "2px solid white"
 	});
 	
 	$J("#irc_join").click(function(e) {
