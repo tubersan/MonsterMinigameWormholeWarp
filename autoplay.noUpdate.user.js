@@ -2,7 +2,7 @@
 // @name Ye Olde Megajump
 // @namespace https://github.com/YeOldeWH/MonsterMinigameWormholeWarp
 // @description A script that runs the Steam Monster Minigame for you.  Now with megajump.  Brought to you by the Ye Olde Wormhole Schemers and DannyDaemonic
-// @version 6.1.0
+// @version 6.1.1
 // @match *://steamcommunity.com/minigame/towerattack*
 // @match *://steamcommunity.com//minigame/towerattack*
 // @grant none
@@ -532,6 +532,12 @@ function MainLoop() {
 				if(enemyType == ENEMY_TYPE.BOSS) {
 					advLog('In lane 0, there is a boss, avoiding', 4);
 					targetLane = 1;
+					var enemyDataLaneOne = s().GetEnemy(1, 0).m_data;
+					var enemyDataLaneTwo = s().GetEnemy(2, 0).m_data;
+					if(typeof enemyDataLaneOne != "undefined" && typeof enemyDataLaneTwo == "undefined"){
+						//Lane 1 has monsters. Lane 2 is empty. Switch to lane 2 instead.
+						targetLane = 2;
+					}	
 				}
 			}
 			if( s().m_rgPlayerData.current_lane != targetLane ) {
