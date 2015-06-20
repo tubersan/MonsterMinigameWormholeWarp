@@ -46,15 +46,18 @@ var enableTrollTrack = getPreferenceBoolean("enableTrollTrack", false);
 var enableElementLock = getPreferenceBoolean("enableElementLock", true);
 var enableAutoRefresh = getPreferenceBoolean("enableAutoRefresh", typeof GM_info !== "undefined");
 
-var autoRefreshMinutes = 30;
-var autoRefreshMinutesRandomDelay = 10;
+var autoRefreshMinutes = 15; // Lowering to 15 minutes
+var autoRefreshMinutesRandomDelay = 5; // Lowering to 5 minutes
 var autoRefreshSecondsCheckLoadedDelay = 30;
 
 var predictTicks = 0;
 var predictJumps = 0;
 var predictLastWormholesUpdate = 0;
 
-
+// Auto refresh handler delay
+var autoRefreshDuringBossDelayTotal = 0; // Total delay already passed
+var autoRefreshDuringBossDelay = 60000; // Delay during the boss (ms)
+var autoRefreshDuringBossDelayStep = 2500; // Delay 'step' (until we try again)
 
 // DO NOT MODIFY
 var isPastFirstRun = false;
@@ -1237,9 +1240,11 @@ function autoRefreshPage(autoRefreshMinutes){
 }
 
 function autoRefreshHandler() {
-	if(lastLevelTimeTaken[1].level % 100 == 0) {
+	// Only skip on % 100 levels when it's been less than the maximum delay specified.
+	if(lastLevelTimeTaken[1].level % 100 === 0 && autoRefreshDuringBossDelayTotal < autoRefreshFirstBossDelay) {
 		advLog('Not refreshing (boss level)', 5);
-		setTimeout(autoRefreshHandler, 3000);
+		autoRefreshDuringBossDelayTotal += autoRefreshFirstBossDelayStep;
+		setTimeout(autoRefreshHandler, autoRefreshFirstBossDelayStep);
 	} else {
 		advLog('Refreshing (not a boss level)', 5);
 		w.location.reload(true);
