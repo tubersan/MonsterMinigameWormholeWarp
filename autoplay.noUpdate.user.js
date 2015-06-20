@@ -996,6 +996,14 @@ function getBuyCount(abilityID, usagePct) {
 function useAutoBadgePurchase() {
 	if(!enableAutoBadgePurchase) { return; }
 	
+	//Alert
+	window.ShowAlertDialog(
+		'Automagic BP Purchaser',
+
+		'<h3 style="color:#FF5252">Just chill for a sec. The script will autoBuy your BP bonuses for you.<br><br></h3>' +
+		'<h3 style="color:yellow">You have ' + getScene().m_rgPlayerTechTree.badge_points + ' badgePoints to spend. This may take a little while, so hold tight.</p>'
+	);
+	
 	var badgePoints = getScene().m_rgPlayerTechTree.badge_points;
 	
 	var abilityData = getScene().m_rgTuningData.abilities;
