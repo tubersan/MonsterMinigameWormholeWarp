@@ -20,8 +20,6 @@ var clickRate = 20;
 var logLevel = 1; // 5 is the most verbose, 0 disables all log
 
 var wormholeOn100 = 1;
-var likeNewOn100 = 0;
-var medicOn100 = 1;
 var clicksOnBossLevel = 0;
 var upgThreshold = 100;
 var minAbilityUsePercent = 0.3;
@@ -653,10 +651,16 @@ function addExtraUI() {
 	css += "#info_hp { position:relative; top:28px; text-align: center;}";
 	css += "#irc_join {position: relative; width: 175px; height: 30px; top: -50px; left: 30px; cursor: pointer;}";
 	css += ".arrow {font-weight: bold; background-color: #bebebe; width: 20px; color: #434340; border-radius: 7px; float: right; text-align: center; margin-top: -2px; margin-left: 10px; }";
+	css += ".abilityDisabledIndicator {  z-index: 2; position: absolute; background: url('http://cdn.steamcommunity.com//economy/emoticon/:TryAgain:'); background-size: 36px 36px; background-repeat: no-repeat; width: 36px; height: 36px; }";
+	css += ".abilityDisabledIndicator.hidden {  display: none; }";
+	
 	$J('head').append('<style>' + css + '</style>');
 	
 	// Put the page footer behind settings
 	$J("#footer").css('z-index', -1);
+	
+	// 'Disabled' indicators for disabled abilities
+	$J('.abilitytemplate').prepend('<div class="abilityDisabledIndicator hidden"></div>');
 }
 
 function toggleInterface() {
@@ -990,11 +994,7 @@ function useAutoBadgePurchase() {
 	];
 	
 	// Attempt to automatically determine if a user should be a LN
-	var maxUsableWormholes = maxItemsStillUsable(ABILITIES.WORMHOLE, 0.2); // Currently, this is 30240 WHs on Round start, and decreases over time
-	
-	//If you can buy more than the number of usable wormholes, toggle the LNUser flag
-	if(badgePoints > abilityData[ABILITIES.WORMHOLE].badge_points_cost * maxUsableWormholes)
-		likeNewOn100 = 1;
+	var maxUsableWormholes = maxItemsStillUsable(ABILITIES.WORMHOLE, 0.2); // Currently, this is 30240 WHs on Round start, and decreases over tim
 
 	for (var i = 0; i < abilityPriorityList.length; i++) {
 		var id = abilityPriorityList[i].id;
@@ -1004,7 +1004,7 @@ function useAutoBadgePurchase() {
 		
 		//Hard cap crit at 100
 		if(id == ABILITIES.CRIT)
-			toBuyCount = Math.Min(toBuyCount, 89); // Max of 89 crit items (puts you at 99.000000149011612% crit chance)
+			toBuyCount = Math.min(toBuyCount, 89); // Max of 89 crit items (puts you at 99.000000149011612% crit chance)
 		
 		// Buy the item the specified number of times
 		for(var j=0; j < toBuyCount; j++ )
@@ -1094,7 +1094,7 @@ function levelsPerSec() {
 //at level 100 spam WH, Like New, and medics, based on your role
 function useAbilitiesAt100() {
 
-	if (wormholeOn100 && !window.SteamDB_Wormhole_Timer) {
+	if (getAbilityItemQuantity(ABILITIES.WORMHOLE) > 0 && !window.SteamDB_Wormhole_Timer) {
 		advLog("At level % 100 = 0, forcing the use of wormholes nonstop", 2);
 		window.SteamDB_Wormhole_Timer = window.setInterval(function(){
 			if (getGameLevel() % 100 !== 0) {
@@ -1108,12 +1108,12 @@ function useAbilitiesAt100() {
 	}
 	
 	//This should equate to approximately 1.8 Like News per second
-	if (likeNewOn100) {
+	if (getAbilityItemQuantity(ABILITIES.LIKE_NEW) > 0) {
 		advLog("At level % 100 = 0, forcing the use of a like new", 2);
 		tryUsingAbility(ABILITIES.LIKE_NEW, false, true); //like new
 	}
 	
-	if (medicOn100) {
+	if (hasAbility(ABILITIES.MEDICS)) {
 		advLog("At level % 100 = 0, forcing the use of a medic", 2);
 		tryUsingAbility(ABILITIES.MEDICS, false, true); //medics
 	}
@@ -2209,27 +2209,36 @@ function triggerAbility(abilityId) {
 	getScene().ApplyClientOverrides('ability', true);
 }
 
-function toggleAbilityVisibility(abilityId, show) {
-	var vis = show === true ? "visible" : "hidden";
+function toggleAbility(abilityId, show) {
 
-	var elem = document.getElementById('ability_' + abilityId);
+	var elem = $J("#ability_" + abilityId);
 
 	// temporary
-	if(!elem) {
-		elem = document.getElementById('abilityitem_' + abilityId);
+	if(elem && elem.length == 0) {
+		elem = $J("#abilityitem_" + abilityId);
 	}
 
-	if (elem && elem.childElements() && elem.childElements().length >= 1) {
-		elem.childElements()[0].style.visibility = vis;
+	if (elem) {
+		if(show) {
+			$(elem).find(".abilityDisabledIndicator").addClass('hidden');
+			elem.unbind('click');
+			elem.click(function(e) { g_Minigame.CurrentScene().TryAbility(abilityId); return false; });
+		}
+		else {
+			$(elem).find(".abilityDisabledIndicator").removeClass('hidden');
+			elem.prop("onclick", null);
+			elem.unbind('click');
+			elem.click(function(e) { e.stopPropagation(); return false; });
+		}
 	}
 }
 
 function disableAbility(abilityId) {
-	toggleAbilityVisibility(abilityId, false);
+	toggleAbility(abilityId, false);
 }
 
 function enableAbility(abilityId) {
-	toggleAbilityVisibility(abilityId, true);
+	toggleAbility(abilityId, true);
 }
 
 function isAbilityEnabled(abilityId) {
@@ -2523,6 +2532,36 @@ function updateLevelInfoTitle(level)
 
 	ELEMENTS.ExpectedLevel.textContent = 'Level: ' + level + ', Levels/second: ' + levelsPerSec() + ', YOWHers: ' + (approxYOWHClients > 0 ? approxYOWHClients : '??');
 	ELEMENTS.RemainingTime.textContent = 'Remaining Time: ' + rem_time.hours + ' hours, ' + rem_time.minutes + ' minutes.';
+}
+
+function abilityCooldown(abilityID) {
+	return g_Minigame.CurrentScene().GetCooldownForAbility(abilityID);
+}
+
+function abilityIsUnlocked(abilityID) {
+	if (abilityID <= ABILITIES.NAPALM)
+		return ((1 << abilityID) & g_Minigame.CurrentScene().m_rgPlayerTechTree.unlocked_abilities_bitfield) > 0;
+	else
+		return getAbilityItemQuantity(abilityID) > 0;
+}
+
+// thanks to /u/mouseasw for the base code: https://github.com/mouseas/steamSummerMinigame/blob/master/autoPlay.js
+function hasAbility(abilityID) {
+	// each bit in unlocked_abilities_bitfield corresponds to an ability.
+	// the above condition checks if the ability's bit is set or cleared. I.e. it checks if
+	// the player has purchased the specified ability.
+	return abilityIsUnlocked(abilityID) && abilityCooldown(abilityID) <= 0;
+}
+
+function getAbilityItemQuantity(abilityID) {
+	for (var i = 0; i < g_Minigame.CurrentScene().m_rgPlayerTechTree.ability_items.length; ++i) {
+		var abilityItem = g_Minigame.CurrentScene().m_rgPlayerTechTree.ability_items[i];
+
+		if (abilityItem.ability == abilityID)
+			return abilityItem.quantity;
+	}
+
+	return 0;
 }
 
 }(window));
