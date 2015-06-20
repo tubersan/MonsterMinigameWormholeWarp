@@ -514,6 +514,12 @@ function MainLoop() {
 				if(enemyType == ENEMY_TYPE.BOSS) {
 					advLog('In lane 0, there is a boss, avoiding', 4);
 					targetLane = 1;
+					var enemyDataLaneOne = s().GetEnemy(1, 0).m_data;
+					var enemyDataLaneTwo = s().GetEnemy(2, 0).m_data;
+					if(typeof enemyDataLaneOne != "undefined" && typeof enemyDataLaneTwo == "undefined"){
+						//Lane 1 has monsters. Lane 2 is empty. Switch to lane 2 instead.
+						targetLane = 2;
+					}	
 				}
 			}
 			if( s().m_rgPlayerData.current_lane != targetLane ) {
