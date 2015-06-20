@@ -6,12 +6,12 @@
 
 ### [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo) ###
 
-1. Visit https://github.com/YeOldeWH/MonsterMinigameWormholeWarp/raw/master/autoPlay.user.js
+1. Visit https://github.com/ensingm2/MonsterMinigameWormholeWarp/raw/master/autoPlay.user.js
 2. When the editor has loaded, click `Install` (*NOT* `Process with Chrome`).
 
 ### [Greasemonkey](https://addons.mozilla.org/en-US/firefox/addon/greasemonkey/) ###
 
-1. Navigate to https://github.com/YeOldeWH/MonsterMinigameWormholeWarp/raw/master/autoPlay.user.js
+1. Navigate to https://github.com/ensingm2/MonsterMinigameWormholeWarp/raw/master/autoPlay.user.js
 2. Right click on the page, and click `Save Page As`.
 3. While Firefox is still open, open a File Manager of any sort, and navigate to the directory you saved the script.
 4. Drag & drop the script file onto the Firefox window.
@@ -36,7 +36,7 @@ This fork has:
 * Off-laning on the x00 boss level allows players to spam Wormholes and Like News without players getting free Nuke charges, as well as keeping the autoclick DPS off of the boss.
 * Wormhole counter isn't updating during x00 is due to a change in the way we use Wormholes.  So fast.
 * The script will now automatically check for updates itself every 5-15 mins and reload itself if it updates, this means no more manual/afk updates!
- * If you're not down for this, switch your script to use `https://github.com/YeOldeWH/MonsterMinigameWormholeWarp/raw/master/autoPlay.noUpdate.user.js` and update manually through Greasemonkey/Tampermonkey like normal.
+ * If you're not down for this, switch your script to use `https://github.com/ensingm2/MonsterMinigameWormholeWarp/raw/master/autoPlay.noUpdate.user.js` and update manually through Greasemonkey/Tampermonkey like normal.
 
 ## Features ##
 
@@ -61,21 +61,21 @@ This fork has:
 ### Manual Installation ###
 
 ##### Chrome #####
-1. Open https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/master/autoplay.noUpdate.user.js
+1. Open https://raw.githubusercontent.com/ensingm2/MonsterMinigameWormholeWarp/master/autoplay.noUpdate.user.js
 2. Select All, Copy.
 3. Navigate to `http://steamcommunity.com/minigame/` and join or start a game.
 4. Press `Ctrl + Shift + J`.
 5. Paste into the javascript input, and hit `Enter`.
 
 ##### Firefox #####
-1. Open https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/master/autoplay.noUpdate.user.js
+1. Open https://raw.githubusercontent.com/ensingm2/MonsterMinigameWormholeWarp/master/autoplay.noUpdate.user.js
 2. Select All, Copy.
 3. Navigate to `http://steamcommunity.com/minigame/` and join or start a game.
 4. Press `Ctrl + Shift + K`.
 5. Paste into the javascript input, and hit `Enter`.
 
 ##### Internet Explorer / Microsoft Edge #####
-1. Open https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/master/autoplay.noUpdate.user.js
+1. Open https://raw.githubusercontent.com/ensingm2/MonsterMinigameWormholeWarp/master/autoplay.noUpdate.user.js
 2. Select All, Copy.
 3. Navigate to `http://steamcommunity.com/minigame/` and join or start a game.
 4. Press `F12` and navigate to the `Console` tab.
