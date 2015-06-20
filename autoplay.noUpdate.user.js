@@ -836,7 +836,7 @@ function useAbilitiesAt100() {
 				return;
 			}
 			if (bHaveItem(ABILITIES.WORMHOLE)) triggerAbility(ABILITIES.WORMHOLE); //wormhole
-		}, 100);
+		}, 1000); //SLOW DOWN. 100ms trigger is causing server to ignore client, primary cause of client desync.
 	}
 	
 	//This should equate to approximately 1.8 Like News per second
