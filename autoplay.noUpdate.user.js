@@ -1003,7 +1003,7 @@ function useAutoBadgePurchase() {
 		var toBuyCount = getBuyCount(id, usagePct); 
 		
 		// Buy the item the specified number of times
-		for(var j=0; j < toBuyCount; i++ )
+		for(var j=0; j < toBuyCount; j++ )
 			abilityPurchaseQueue.push(id);
 		
 		// Decrement our badge points remaining
