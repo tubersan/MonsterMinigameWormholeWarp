@@ -6,13 +6,13 @@
 // @match *://steamcommunity.com/minigame/towerattack*
 // @match *://steamcommunity.com//minigame/towerattack*
 // @grant none
-// @updateURL https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/master/autoplay.noUpdate.user.js
-// @downloadURL https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/master/autoplay.noUpdate.user.js
+// @updateURL https://github.com/YeOldeWH/MonsterMinigameWormholeWarp/raw/master/autoplay.noUpdate.user.js
+// @downloadURL https://github.com/YeOldeWH/MonsterMinigameWormholeWarp/raw/master/autoplay.noUpdate.user.js
 // ==/UserScript==
 
 // IMPORTANT: Update the @version property above to a higher number such as 1.1 and 1.2 when you update the script! Otherwise, Tamper / Greasemonkey users will not update automatically.
 
-(function(w) {
+(function(window) {
 	"use strict";
 
 // OPTIONS
@@ -20,8 +20,6 @@ var clickRate = 20;
 var logLevel = 1; // 5 is the most verbose, 0 disables all log
 
 var wormholeOn100 = 1;
-var likeNewOn100 = 0;
-var medicOn100 = 1;
 var clicksOnBossLevel = 0;
 var upgThreshold = 100;
 var minAbilityUsePercent = 0.3;
@@ -194,7 +192,7 @@ if (Object.defineProperty) {
 }
 
 if(!getPreferenceBoolean("alertShown", false)) {
-	w.ShowAlertDialog(
+	window.ShowAlertDialog(
 		'Ye Olde Megajump',
 
 		'<div style="color:#FF5252">This dialog will be shown just once, so please read through it.<br><br></div>' +
@@ -207,18 +205,16 @@ if(!getPreferenceBoolean("alertShown", false)) {
 	});
 }
 
-function s() {
-	return w.g_Minigame.m_CurrentScene;
+function getScene() {
+	return window.g_Minigame.m_CurrentScene;
 }
 
 function firstRun() {
 	advLog("Starting YOWH Script.", 1);
 
-	trt_oldCrit = s().DoCritEffect;
-	trt_oldPush = s().m_rgClickNumbers.push;
-	trt_oldRender = w.g_Minigame.Render;
-
-	toggleFingering();
+	trt_oldCrit = getScene().DoCritEffect;
+	trt_oldPush = getScene().m_rgClickNumbers.push;
+	trt_oldRender = window.g_Minigame.Render;
 
 	if(enableElementLock) {
 		lockElements();
@@ -226,18 +222,16 @@ function firstRun() {
 
 	if (enableAutoRefresh) {
 		autoRefreshPage(autoRefreshMinutes);
-	}
-
-	toggleRenderer();
+	}	
 
 	// disable particle effects - this drastically reduces the game's memory leak
 	disableParticles();
 
 	// disable enemy flinching animation when they get hit
-	if(removeFlinching && w.CEnemy) {
-		w.CEnemy.prototype.TakeDamage = function() {};
-		w.CEnemySpawner.prototype.TakeDamage = function() {};
-		w.CEnemyBoss.prototype.TakeDamage = function() {};
+	if(removeFlinching && window.CEnemy) {
+		window.CEnemy.prototype.TakeDamage = function() {};
+		window.CEnemySpawner.prototype.TakeDamage = function() {};
+		window.CEnemyBoss.prototype.TakeDamage = function() {};
 	}
 
 	if(removeCritText) {
@@ -261,8 +255,6 @@ function firstRun() {
 		"#activeinlanecontainer:hover {height: auto; background-image: radial-gradient(circle farthest-corner at 32px 0px, rgba(0,124,182,0.1), #11111C); padding-bottom: 10px; position:absolute; z-index: 1;}",
 		"#activeinlanecontainer:hover + #activitylog {margin-top: 88px;}",
 		"#activitylog {margin-top: 20px}",
-		// Hide leave game button
-		".leave_game_btn {display: none;}",
 		// Option menu
 		".game_options {height: auto;}",
 		".game_options .toggle_sfx_btn {margin: 6px 7px 0px 2px; float: right;}",
@@ -273,7 +265,7 @@ function firstRun() {
 		".options_column label {display: inline-block;}",
 		".options_column input {float: left;}",
 		".options_column input[type=number] {margin: 6px 5px 0 0; padding: 2px 0px 0px 4px;}",
-		".options_column input[name=setLogLevel] {width: 25px;}",
+		".options_column input[id=logLevelInput] {width: 25px;}",
 		".options_column span.asterisk {line-height: 14px;}",
 		// Element lock box
 		".lock_elements_box {width: 165px; top: -76px; left: 303px; box-sizing: border-box; line-height: 1rem; padding: 7px 10px; position: absolute; color: #EDEDED;}",
@@ -318,7 +310,10 @@ function firstRun() {
 	toggleTrackTroll();
 
 	// Add cool background
-	$J('body.flat_page.game').css('background-image', 'url(http://i.imgur.com/P8TB236.jpg)');
+	$J('body.flat_page.game').css({
+		'background-image': 'url(http://i.imgur.com/P8TB236.jpg)',
+		'background-repeat': 'repeat',
+	});
 
 	// Add "players in game" label
 	var titleActivity = document.querySelector( '.title_activity' );
@@ -327,52 +322,353 @@ function firstRun() {
 	titleActivity.insertBefore(playersInGame, titleActivity.firstChild);
 	ELEMENTS.PlayersInGame = document.getElementById("players_in_game");
 
-	var info_box = document.querySelector(".leave_game_helper");
-	info_box.className = "options_box";
-	var options_menu = document.querySelector(".game_options");
-	var sfx_btn = document.querySelector(".toggle_sfx_btn");
-	options_menu.insertBefore(info_box, sfx_btn);
+	enhanceTooltips();
+	addIRC();
+	addExtraUI();
 
-	info_box.innerHTML = '<b>OPTIONS</b>' + ((typeof GM_info !== "undefined") ? ' (v' + GM_info.script.version + ')' : '') + '<br>Settings marked with a <span class="asterisk">*</span> requires a refresh to take effect.<hr>';
+	//Enable Pointer
+	var value = enableFingering;
 
-	var options1 = document.createElement("div");
-	options1.className = "options_column";
+	window.CSceneGame.prototype.ClearNewPlayer = function(){};
 
-	options1.appendChild(makeCheckBox("removeInterface", "Remove interface", removeInterface, handleEvent, true));
-	options1.appendChild(makeCheckBox("removeParticles", "Remove particle effects", removeParticles, handleEvent, true));
-	options1.appendChild(makeCheckBox("removeFlinching", "Remove flinching effects", removeFlinching, handleEvent, true));
-	options1.appendChild(makeCheckBox("removeCritText", "Remove crit text", removeCritText, toggleCritText, false));
-	options1.appendChild(makeCheckBox("removeAllText", "Remove all text", removeAllText, toggleAllText, false));
-	options1.appendChild(makeCheckBox("disableRenderer", "Limit frames per second to increase performance", disableRenderer, toggleRenderer, false));
-	options1.appendChild(makeCheckBox("enableChen", "Honk Honk?", enableChen, toggleChen, false));
-
-	info_box.appendChild(options1);
-
-	var options2 = document.createElement("div");
-	options2.className = "options_column";
-
-	if (typeof GM_info !== "undefined") {
-		options2.appendChild(makeCheckBox("enableAutoRefresh", "Enable AutoRefresh (mitigate memory leak)", enableAutoRefresh, toggleAutoRefresh, false));
+	if(!getScene().m_spriteFinger) {
+		window.WebStorage.SetLocal('mg_how2click', 0);
+		getScene().CheckNewPlayer();
+		window.WebStorage.SetLocal('mg_how2click', 1);
 	}
 
-	options2.appendChild(makeCheckBox("enableFingering", "Enable targeting pointer", enableFingering, toggleFingering, false));
-	options2.appendChild(makeCheckBox("enableTrollTrack", "Enable tracking trolls", enableTrollTrack, toggleTrackTroll, false));
-	options2.appendChild(makeNumber("setLogLevel", "Change the log level (you shouldn't need to touch this)", logLevel, 0, 5, updateLogLevel));
+	if(value) {
+		getScene().m_containerParticles.addChild(getScene().m_spriteFinger);
+	} else {
+		getScene().m_containerParticles.removeChild(getScene().m_spriteFinger);
+	}
+	document.getElementById('newplayer').style.display = 'none';
+	
+	updateToggle("pointer", enableFingering);
+	
+	
+	//Initial disable of renderer
+	var ticker = window.PIXI.ticker.shared;
 
-	info_box.appendChild(options2);
+	if (!value) {
+		ticker.autoStart = true;
+		ticker.start();
 
-	//Elemental upgrades lock
-	var ab_box = document.getElementById("abilities");
-	var lock_elements_box = document.createElement("div");
-	lock_elements_box.className = "lock_elements_box";
-	lock_elements_box.title = "To maximise team damage players should max only one element. But distributions of elements through people should be equal. So we calculated your element using your unique ID. Upgrade your element to make maximum performance or disable this checkbox.";
-	var lock_elements_checkbox = makeCheckBox("enableElementLock", "Lock element upgrades for more team dps", enableElementLock, toggleElementLock, false);
-	lock_elements_box.appendChild(lock_elements_checkbox);
-	ab_box.appendChild(lock_elements_box);
+		window.g_Minigame.Render = trt_oldRender;
+		window.g_Minigame.Render();
+	} else {
+		ticker.autoStart = false;
+		ticker.stop();
 
-	enhanceTooltips();
-
+		window.g_Minigame.Render = function() {};
+	}
+	updateToggle("limitFPS", disableRenderer);
+	
 	isPastFirstRun = true;
+	
+	//try to autoBuy BP
+	if(enableAutoBadgePurchase){
+		var bpAutoBuyer = setInterval(function() {
+			if($J("#spend_badge_points_dialog").is(":visible")){
+				clearInterval(bpAutoBuyer);
+				useAutoBadgePurchase();
+			}
+		}, 100);
+	}
+}
+
+function addExtraUI() {
+	
+	//Add settings div
+	$J("#gamecontainer").append('<div id="settings"></div>');
+	
+	$J('#settings').css({
+		"position": "absolute",
+		"background": "url('https://raw.githubusercontent.com/ensingm2/SteamMonsterGameScript/master/img/settings.png')",
+		"background-repeat": "no-repeat",
+		"background-position": "0px 0px",
+		"height": "300px",
+		"width": "500px",
+		"margin-top": "2px",
+		"bottom": "-65px",
+		"right": "10px",
+		"padding-top": "15px",
+		"padding-left": "12px"
+	});
+
+	//Bring the close button back
+	$J('<div class="leave_game_btn">Close Game</div>').insertAfter("#settings");
+	$J(".leave_game_btn").css({
+		"width": "120px",
+		"position": "absolute",
+		"bottom": "90px",
+		"z-index": "12",
+		"left": "335px",
+		"border": "5px solid grey",
+		"border-radius": "5px",
+		"background-color": "black",
+		"height": "35px",
+		"text-align": "center",
+		"cursor": "pointer",
+		"font-family": "'Press Start 2P', \"Lucida Console\", Consolas, Arial",
+		"color": "white"
+	});
+	$J('.leave_game_btn').click(function() {
+		window.location = 'http://steamcommunity.com/minigame/';
+	});
+	
+	$J('<div class="leave_game_helper">You can safely close the game or leave this screen at any time—you will continue collecting gold and damaging monsters even while away from your computer. Check back occasionally to see how you\'re doing and use in-game gold to purchase upgrades.</div>').insertAfter("#settings");
+	$J(".leave_game_helper").css({
+		"left": "150px",
+		"top": "initial",
+		"bottom": "-20px",
+		"z-index": "13"
+	});
+	
+	$J("#settings").append('<div id="music_toggle" class="toggle"><span class="value disabled"></span><span class="title">Music: </span></div>');
+	$J("#settings").append('<div id="sfx_toggle" class="toggle"><span class="value disabled"></span><span class="title">SFX: </span></div>');
+	$J("#settings").append('<div id="interface_toggle" class="toggle"><span class="value disabled"></span><span class="title">Interface*:  </span></div>');
+	$J("#settings").append('<div id="particle_toggle" class="toggle"><span class="value disabled"></span><span class="title">Particles*: </span></div>');
+	$J("#settings").append('<div id="flinching_toggle" class="toggle"><span class="value disabled"></span><span class="title">Flinching*: </span></div>');
+	$J("#settings").append('<div id="critText_toggle" class="toggle"><span class="value enabled"></span><span class="title">Crit Text: </span></div>');
+	$J("#settings").append('<div id="allText_toggle" class="toggle"><span class="value enabled"></span><span class="title">All Text: </span></div>');
+	$J("#settings").append('<div id="limitFPS_toggle" class="toggle"><span class="value enabled"></span><span class="title">Limit FPS: </span></div>');
+	$J("#settings").append('<div id="pointer_toggle" class="toggle"><span class="value enabled"></span><span class="title">Targetting Pointer: </span></div>');
+	$J("#settings").append('<div id="trollTracker_toggle" class="toggle"><span class="value disabled"></span><span class="title">Troll Tracking: </span></div>');
+	$J("#settings").append('<div id="elementLock_toggle" class="toggle"><span class="value enabled"></span><span class="title">Element Locking: </span></div>');
+	$J("#settings").append('<div id="chen_toggle" class="toggle"><span class="value disabled"></span><span class="title">Honk Honk? </span></div>');
+	
+	$J("#settings").append('<div><span class="toggle">Lock Level: <input type="number" id="logLevelInput" value="'+logLevel+'" min=0 max=5></input></span></div>');
+	
+	$J("#logLevelInput").change(function() {
+		logLevel = $J('#logLevelInput').val();
+	});
+	
+	//Prevent propagation back to container slider
+	$J("#logLevelInput").click(function(event) {
+		Event.stop(event);
+	});
+	
+	$J("#settings").append('<div><span class="toggle" style="margin-left: 25px; color: red">* - Restart Required</span></div>');
+	
+	$J("#sfx_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleSFX(true);
+	});
+	
+	$J("#music_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleMusic(true);
+	});
+	
+	$J("#interface_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleInterface(true);
+	});
+	$J("#particle_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleParticles(true);
+	});
+	
+	$J("#flinching_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleFlinching(true);
+	});
+	
+	$J("#critText_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleCritText();
+	});
+	
+	$J("#allText_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleAllText();
+	});
+	
+	$J("#limitFPS_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleRenderer();
+	});
+	
+	$J("#pointer_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleFingering();
+	});
+	
+	$J("#trollTracker_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleTrackTroll();
+	});
+	
+	$J("#elementLock_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleElementLock();
+	});
+	
+	$J("#chen_toggle").click(function(e) {
+		e.stopPropagation();
+		toggleChen();
+	});
+	
+	// We force update the icon once to sync with active settings
+	updateToggle("sfx", !WebStorage.GetLocal('minigame_mute'));
+	updateToggle("music", !WebStorage.GetLocal('minigame_mutemusic'));
+	updateToggle("interface", !removeInterface);
+	updateToggle("particle", !removeParticles);
+	updateToggle("flinching", !removeFlinching);
+
+	// Slide the settings panel out on click
+	$J("#settings").click(function() {
+		var op = $J("#settings");
+		op.animate({
+			bottom: parseInt(op.css('bottom'), 10) == -65 ? -op.outerHeight() : -65
+		});
+	});
+
+	//Statistics
+	$J("#gamecontainer").append('<div id="statistics"></div>');
+	$J('#statistics').css({
+		"position": "absolute",
+		"background": "url('https://raw.githubusercontent.com/ensingm2/SteamMonsterGameScript/master/img/stats.png')",
+		"background-repeat": "no-repeat",
+		"background-position": "0px 0px",
+		"height": "250px",
+		"width": "500px",
+		"margin-top": "2px",
+		"bottom": "-65px",
+		"left": "10px",
+		"padding-top": "15px",
+		"padding-left": "25px"
+	});
+
+	//Add in stats
+	$J("#statistics").append('<div id="stat_player_dpc" class="stat"><span class="title">Dmg Per Click: </span><span class="value">0</span></div>');
+	$J("#statistics").append('<div id="stat_player_dps" class="stat"><span class="title">Dmg Per Second: </span><span class="value">0</span></div>');
+	$J("#statistics").append('<div id="stat_player_crit" class="stat"><span class="title">Critical Chance: </span><span class="value">0</span></div>');
+	$J("#statistics").append('<div id="stat_crit_mul" class="stat"><span class="title">Critical Dmg Multiplier: </span><span class="value">0</span></div>');
+	$J("#statistics").append('<div id="stat_elemental_mul" class="stat"><span class="title">Elemental Multiplier: </span><span class="value">0</span></div>');
+	$J("#statistics").append('<div id="stat_elemental_dpc" class="stat"><span class="title">Elemental DPC: </span><span class="value">0</span></div>');
+	$J("#statistics").append('<div id="stat_elemental_dps" class="stat"><span class="title">Elemental DPS: </span><span class="value">0</span></div>');
+	$J("#statistics").append('<div id="stat_boss_loot" class="stat"><span class="title">Boss Loot Chance: </span><span class="value">0</span></div>');
+
+	$J("#footer_spacer").css({
+		"height": "175px"
+	});
+	$J("canvas").css({
+		"position": "relative",
+		"z-index": "5"
+	});
+	$J("#uicontainer").css({
+		"z-index": "6"
+	});
+	
+	//Update stats
+	setInterval(function() {
+		function getElementalMul() {
+			return Math.max(g_Minigame.m_CurrentScene.m_rgPlayerTechTree.damage_multiplier_air, g_Minigame.m_CurrentScene.m_rgPlayerTechTree.damage_multiplier_earth, g_Minigame.m_CurrentScene.m_rgPlayerTechTree.damage_multiplier_fire, g_Minigame.m_CurrentScene.m_rgPlayerTechTree.damage_multiplier_water);
+		}
+		$J("#statistics #stat_player_dpc .value").html(FormatNumberForDisplay(g_Minigame.m_CurrentScene.m_rgPlayerTechTree.damage_per_click, 5));
+		$J("#statistics #stat_player_dps .value").html(FormatNumberForDisplay(g_Minigame.m_CurrentScene.m_rgPlayerTechTree.damage_per_click * clickRate, 5));
+		$J("#statistics #stat_player_crit .value").html(FormatNumberForDisplay(Math.round(g_Minigame.m_CurrentScene.m_rgPlayerTechTree.crit_percentage * 100), 5) + "%");
+		$J("#statistics #stat_crit_mul .value").html(FormatNumberForDisplay(g_Minigame.m_CurrentScene.m_rgPlayerTechTree.damage_multiplier_crit, 5) + "x");
+		$J("#statistics #stat_elemental_mul .value").html(FormatNumberForDisplay(getElementalMul()) + "x");
+		$J("#statistics #stat_elemental_dpc .value").html(FormatNumberForDisplay(getElementalMul() * g_Minigame.m_CurrentScene.m_rgPlayerTechTree.damage_per_click, 5));
+		$J("#statistics #stat_elemental_dps .value").html(FormatNumberForDisplay(getElementalMul() * g_Minigame.m_CurrentScene.m_rgPlayerTechTree.damage_per_click * clickRate, 5));
+		$J("#statistics #stat_boss_loot .value").html(FormatNumberForDisplay(Math.round(g_Minigame.m_CurrentScene.m_rgPlayerTechTree.boss_loot_drop_percentage * 100, 5)) + "%");
+	}, 1000);
+
+	$J("#statistics").click(function() {
+		var op = $J("#statistics");
+		op.animate({
+			bottom: parseInt(op.css('bottom'), 10) == -65 ? -op.outerHeight() : -65
+		});
+	});
+
+	//Smack the TV Easter Egg
+	$J('<div style="height: 52px; position: absolute; bottom: 85px; left: 828px; z-index: 12;" onclick="SmackTV();"><br><br><span style="font-size:10px; padding: 12px; color: gold;">Smack TV</span></div>').insertBefore('#row_bottom');
+
+	//Remove unneeded options area 
+	$J(".game_options").remove();
+
+	//Hide the stupid "Leave game" tooltip
+	$J('.leave_game_btn').mouseover(function() {
+			$J('.leave_game_helper').show();
+		})
+		.mouseout(function() {
+			$J('.leave_game_helper').hide();
+		});
+	$J('.leave_game_helper').hide(); 
+
+	
+	//Custom CSS
+	var css = "";
+	css += "#settings .toggle { position: relative; margin-top: 10px; width: 30%; height: 32px; z-index: 0; float: left; margin-left: 10px;} ";
+	css += "#settings span.title { position: relative; top: 10px; float: right; right:15px; text-align:right; width: 80%;} ";
+	css += "#settings span.value { position: relative; float: right; right:10px; display: inline-block; z-index:11; cursor: pointer;} ";
+	css += "#settings span.value.enabled { background: url('https://raw.githubusercontent.com/ensingm2/SteamMonsterGameScript/master/img/icons.png'); background-repeat: no-repeat;background-position:0px 0px;width:30px;height:30px; } ";
+	css += "#settings span.value.enabled:hover { background: url('https://raw.githubusercontent.com/ensingm2/SteamMonsterGameScript/master/img/icons.png'); background-repeat: no-repeat;background-position:-30px 0px;width:30px;height:30px; } ";
+	css += "#settings span.value.disabled { background: url('https://raw.githubusercontent.com/ensingm2/SteamMonsterGameScript/master/img/icons.png'); background-repeat: no-repeat;background-position:0px -30px;width:30px;height:32px; } ";
+	css += "#settings span.value.disabled:hover { background: url('https://raw.githubusercontent.com/ensingm2/SteamMonsterGameScript/master/img/icons.png'); background-repeat: no-repeat;background-position:-30px -30px;width:30px;height:32px; } ";
+
+	css += "#statistics .stat { position: relative; margin-top: 5px; width: 40%; height: 32px; z-index: 0; margin-left: 25px; float:left;} ";
+	css += "#statistics span.value { position: relative; float: right; margin-right: 30px; text-align: right; width: 100%;} ";
+	css += "#statistics span.title { position: relative; width: 100%; font-weight: bold;} ";
+
+	css += ".toggle_btn {background: #d6d6d6;-webkit-border-radius: 7; -moz-border-radius: 7; border-radius: 7px; color: #333; text-decoration: none; text-align: center;cursor: pointer;font-weight: bold;} ";
+	css += ".toggle_btn:hover { background: #85c8f2; text-decoration: none; color: #fff;cursor: pointer;font-weight: bold;} ";
+	css += "#activeinlanecontainer:hover {border-radius: 7px; border: 2px red;height:auto;background-color: black;padding-bottom:10px;position:absolute;z-index:1} #activeinlanecontainer:hover ~ #activitylog {margin-top:97px} #activitylog {margin-top: 29px} ";
+	css += "#leaderboard_wrapper {overflow: hidden; height: 360px; width: 261px; position: relative; margin: 50px 0px 0px 5px; padding: 5px;} #activeinlanecontainer:hover ~ #leaderboard_wrapper {margin-top: 118px}";
+	css += "#info_hp { position:relative; top:28px; text-align: center;}";
+	css += "#irc_join {position: relative; width: 175px; height: 30px; top: -50px; left: 30px; cursor: pointer;}";
+	css += ".arrow {font-weight: bold; background-color: #bebebe; width: 20px; color: #434340; border-radius: 7px; float: right; text-align: center; margin-top: -2px; margin-left: 10px; }";
+	css += ".abilityDisabledIndicator {  z-index: 2; position: absolute; background: url('http://cdn.steamcommunity.com//economy/emoticon/:TryAgain:'); background-size: 36px 36px; background-repeat: no-repeat; width: 36px; height: 36px; }";
+	css += ".abilityDisabledIndicator.hidden {  display: none; }";
+	
+	$J('head').append('<style>' + css + '</style>');
+	
+	// Put the page footer behind settings
+	$J("#footer").css('z-index', -1);
+	
+	// 'Disabled' indicators for disabled abilities
+	$J('.abilitytemplate').prepend('<div class="abilityDisabledIndicator hidden"></div>');
+}
+
+function toggleInterface() {
+	removeInterface = !removeInterface;
+	setPreference("removeInterface", removeInterface);
+	updateToggle("interface", removeInterface);
+}
+
+function toggleParticles() {
+	removeParticles = !removeParticles;
+	setPreference("removeParticles", removeParticles);
+	updateToggle("particle", removeParticles);
+}
+
+function toggleFlinching() {
+	removeFlinching = !removeFlinching;
+	setPreference("removeFlinching", removeFlinching);
+	updateToggle("flinching", removeFlinching);
+}
+
+function updateToggle(id, enabled) {
+	if (enabled) {
+		$J("#" + id + "_toggle span.value").removeClass("disabled").addClass("enabled");
+	} else {
+		$J("#" + id + "_toggle span.value").removeClass("enabled").addClass("disabled");
+	}
+}
+
+function toggleSFX() {
+	WebStorage.SetLocal('minigame_mute', !WebStorage.GetLocal('minigame_mute'));
+		
+	updateToggle("sfx", !WebStorage.GetLocal('minigame_mute'));
+}
+
+function toggleMusic() {
+	g_AudioManager.ToggleMusic();
+	
+	updateToggle("music", !WebStorage.GetLocal('minigame_mutemusic'));
 }
 
 // Valve's update
@@ -408,7 +704,7 @@ var localUpdateLog = function( rgLaneLog ) {
 
 					this.m_eleUpdateLogContainer[0].insertBefore(ele[0], this.m_eleUpdateLogContainer[0].firstChild);
 				
-					advLog(rgEntry.actor_name + " used " + s().m_rgTuningData.abilities[ rgEntry.ability ].name + " on level " + level, 1);
+					advLog(rgEntry.actor_name + " used " + getScene().m_rgTuningData.abilities[ rgEntry.ability ].name + " on level " + level, 1);
 				}
 				break;
 			default:
@@ -428,16 +724,16 @@ var localUpdateLog = function( rgLaneLog ) {
 };
 
 function disableParticles() {
-	if (w.CSceneGame) {
-		w.CSceneGame.prototype.DoScreenShake = function() {};
+	if (window.CSceneGame) {
+		window.CSceneGame.prototype.DoScreenShake = function() {};
 
 		if(removeParticles) {
-			w.CSceneGame.prototype.SpawnEmitter = function(emitter) {
+			window.CSceneGame.prototype.SpawnEmitter = function(emitter) {
 				emitter.emit = false;
 				return emitter;
 			};
 
-			var particles = s().m_rgActiveParticles;
+			var particles = getScene().m_rgActiveParticles;
 
 			if(particles) {
 				if (particles[ 7 ]) {
@@ -469,30 +765,35 @@ function disableParticles() {
 	}
 }
 
-function getTimeleft() {
-	var cTime = new Date();
-	var cHours = cTime.getUTCHours();
-	var cMins = cTime.getUTCMinutes();
-	var timeLeft = 60 - cMins;
-
-	if (cHours == 15) {
-		return timeLeft;
+function getEndDate() {
+	var endDate = new Date();
+	if (endDate.getUTCHours() >= 16) {
+		endDate.setUTCDate(endDate.getUTCDate() + 1);
 	}
+	endDate.setUTCHours(16, 0, 0, 0);
+	return endDate;
+}
 
-	return 61;
+function getSecondsRemaining() {
+	var now = new Date();
+	var endDate = getEndDate();
+	
+	var diff = endDate.getTime() - now.getTime();
+
+	return diff / 1000;
 }
 
 function updateLevelTimeTracker() {
 	if (lastLevelTimeTaken[0].level !== getGameLevel()) {
 		lastLevelTimeTaken.unshift({level: getGameLevel(),
 									levelsGained: -1,
-									timeStarted: s().m_rgGameData.timestamp,
+									timeStarted: getScene().m_rgGameData.timestamp,
 									timeTakenInSeconds: -1});
 
 		var previousLevel = lastLevelTimeTaken[1];
 
 		previousLevel.levelsGained = getGameLevel() - previousLevel.level;
-		previousLevel.timeTakenInSeconds = s().m_rgGameData.timestamp - previousLevel.timeStarted;
+		previousLevel.timeTakenInSeconds = getScene().m_rgGameData.timestamp - previousLevel.timeStarted;
 	}
 
 	if (lastLevelTimeTaken.length > 10) {
@@ -501,10 +802,10 @@ function updateLevelTimeTracker() {
 }
 
 function MainLoop() {
-	var status = s().m_rgGameData.status;
+	var status = getScene().m_rgGameData.status;
 	if(status != GAME_STATUS.RUNNING) {
 		if(disableRenderer) {
-			s().Tick();
+			getScene().Tick();
 		}
 
 		return;
@@ -519,7 +820,8 @@ function MainLoop() {
 		
 		if( level !== lastLevel ) {
 			// Clear any unsent abilities still in the queue when our level changes
-			s().m_rgAbilityQueue.clear();
+			getScene().m_rgAbilityQueue.clear();
+			
 			// update skips if applicable
 			if (updateSkips) {
 				skipsLastJump = level - lastLevel;
@@ -531,42 +833,43 @@ function MainLoop() {
 			// On a WH level, jump everyone with wormholes to lane 0, unless there is a boss there, in which case jump to lane 1.
 			var targetLane = 0;
 			// Check lane 0, enemy 0 to see if it's a boss
-			var enemyData = s().GetEnemy(0, 0).m_data;
+			var enemyData = getScene().GetEnemy(0, 0).m_data;
 			if(typeof enemyData !== "undefined"){
 				var enemyType = enemyData.type;
 				if(enemyType == ENEMY_TYPE.BOSS) {
 					advLog('In lane 0, there is a boss, avoiding', 4);
 					targetLane = 1;
-					var enemyDataLaneOne = s().GetEnemy(1, 0).m_data;
-					var enemyDataLaneTwo = s().GetEnemy(2, 0).m_data;
+					var enemyDataLaneOne = getScene().GetEnemy(1, 0).m_data;
+					var enemyDataLaneTwo = getScene().GetEnemy(2, 0).m_data;
 					if(typeof enemyDataLaneOne != "undefined" && typeof enemyDataLaneTwo == "undefined"){
 						//Lane 1 has monsters. Lane 2 is empty. Switch to lane 2 instead.
 						targetLane = 2;
 					}	
 				}
 			}
-			if( s().m_rgPlayerData.current_lane != targetLane ) {
+			if( getScene().m_rgPlayerData.current_lane != targetLane ) {
 				advLog('Moving player to wormhole lane ' + targetLane, 4);
-				s().TryChangeLane(targetLane); // put everyone in the same lane
+				getScene().TryChangeLane(targetLane); // put everyone in the same lane
 			}
 
 			updateSkips = true;
 		} else {
 			goToLaneWithBestTarget(level);
 		}
+		
+		// Clear any unsent abilities still in the queue when our level changes
+		if( level !== lastLevel )
+			getScene().m_rgAbilityQueue.clear();
 
 		attemptRespawn();
 
-		if (level % 100 !== 0 && w.SteamDB_Wormhole_Timer) {
-			w.clearInterval(w.SteamDB_Wormhole_Timer);
-			w.SteamDB_Wormhole_Timer = false;
+		if (level % 100 !== 0 && window.SteamDB_Wormhole_Timer) {
+			window.clearInterval(window.SteamDB_Wormhole_Timer);
+			window.SteamDB_Wormhole_Timer = false;
 		}
 
-		var timeLeft = getTimeleft(); // Time left in minutes
 		if(level % 100 == 0){
 			useAbilitiesAt100();
-		} else if(timeLeft <= 15) {
-			useAllAbilities();
 		} else {
 			useAbilities(level);
 		}
@@ -588,13 +891,10 @@ function MainLoop() {
 		}
 
 		// only AutoUpgrade after we've spend all badge points
-		if(s().m_rgPlayerTechTree) {
-			if(s().m_rgPlayerTechTree.badge_points === 0) {
+		if(getScene().m_rgPlayerTechTree) {
+			if(getScene().m_rgPlayerTechTree.badge_points === 0) {
 				useAutoUpgrade();
 				useAutoPurchaseAbilities();
-			}
-			else {
-				useAutoBadgePurchase();
 			}
 		}
 
@@ -623,57 +923,57 @@ function MainLoop() {
 			}
 
 			
-			s().m_nClicks += absoluteCurrentClickRate;
+			getScene().m_nClicks += absoluteCurrentClickRate;
 		}
 
-		s().m_nLastTick = false;
-		w.g_msTickRate = 1000;
+		getScene().m_nLastTick = false;
+		window.g_msTickRate = 1000;
 
-		var damagePerClick = s().CalculateDamage(
-			s().m_rgPlayerTechTree.damage_per_click,
-			s().m_rgGameData.lanes[s().m_rgPlayerData.current_lane].element
+		var damagePerClick = getScene().CalculateDamage(
+			getScene().m_rgPlayerTechTree.damage_per_click,
+			getScene().m_rgGameData.lanes[getScene().m_rgPlayerData.current_lane].element
 		);
 
 		advLog("Ticked. Current clicks per second: " + absoluteCurrentClickRate + ". Current damage per second: " + (damagePerClick * absoluteCurrentClickRate), 4);
 
 		if(disableRenderer) {
-			s().Tick();
+			getScene().Tick();
 
 			requestAnimationFrame(function() {
-				w.g_Minigame.Renderer.render(s().m_Container);
+				window.g_Minigame.Renderer.render(getScene().m_Container);
 			});
 		}
 
 		isAlreadyRunning = false;
 
 		if( absoluteCurrentClickRate > 0) {
-			var enemy = s().GetEnemy(
-				s().m_rgPlayerData.current_lane,
-				s().m_rgPlayerData.target);
+			var enemy = getScene().GetEnemy(
+				getScene().m_rgPlayerData.current_lane,
+				getScene().m_rgPlayerData.target);
 
 			if (enemy) {
 				displayText(
 					enemy.m_Sprite.position.x - (enemy.m_nLane * 440),
 					enemy.m_Sprite.position.y - 52,
-					"-" + w.FormatNumberForDisplay((damagePerClick * absoluteCurrentClickRate), 5),
+					"-" + window.FormatNumberForDisplay((damagePerClick * absoluteCurrentClickRate), 5),
 					"#aaf"
 				);
 
-				if( s().m_rgStoredCrits.length > 0 ) {
-					var rgDamage = s().m_rgStoredCrits.reduce(function(a,b) {
+				if( getScene().m_rgStoredCrits.length > 0 ) {
+					var rgDamage = getScene().m_rgStoredCrits.reduce(function(a,b) {
 						return a + b;
 					});
-					s().m_rgStoredCrits.length = 0;
+					getScene().m_rgStoredCrits.length = 0;
 
-					s().DoCritEffect( rgDamage, enemy.m_Sprite.position.x - (enemy.m_nLane * 440), enemy.m_Sprite.position.y + 17, 'Crit!' );
+					getScene().DoCritEffect( rgDamage, enemy.m_Sprite.position.x - (enemy.m_nLane * 440), enemy.m_Sprite.position.y + 17, 'Crit!' );
 				}
 
-				var goldPerClickPercentage = s().m_rgGameData.lanes[s().m_rgPlayerData.current_lane].active_player_ability_gold_per_click;
+				var goldPerClickPercentage = getScene().m_rgGameData.lanes[getScene().m_rgPlayerData.current_lane].active_player_ability_gold_per_click;
 				if (goldPerClickPercentage > 0 && enemy.m_data.hp > 0) {
 					var goldPerSecond = enemy.m_data.gold * goldPerClickPercentage * absoluteCurrentClickRate;
 
-					s().ClientOverride('player_data', 'gold', s().m_rgPlayerData.gold + goldPerSecond);
-					s().ApplyClientOverrides('player_data', true);
+					getScene().ClientOverride('player_data', 'gold', getScene().m_rgPlayerData.gold + goldPerSecond);
+					getScene().ApplyClientOverrides('player_data', true);
 
 					advLog(
 						"Raining gold ability is active in current lane. Percentage per click: " + goldPerClickPercentage
@@ -683,7 +983,7 @@ function MainLoop() {
 					displayText(
 						enemy.m_Sprite.position.x - (enemy.m_nLane * 440),
 						enemy.m_Sprite.position.y - 17,
-						"+" + w.FormatNumberForDisplay(goldPerSecond, 5),
+						"+" + window.FormatNumberForDisplay(goldPerSecond, 5),
 						"#e1b21e"
 					);
 				}
@@ -692,68 +992,109 @@ function MainLoop() {
 	}
 }
 
+// checks the amount of items that are still usable in the round
+// THIS ASSUMES NO COOLDOWN, OR A CONSTANT SUPPLY OF LNs, AS IT IS A THEORETICAL MAX
+function maxItemsStillUsable(abilityID, usagePct) {
+	var maxItemUsePerSec = 1.75; // Estimated number of wormholes usable by client in a second
+	
+	return Math.floor(maxItemUsePerSec * usagePct * getSecondsRemaining());
+}
+
+function getBPBuyCount(abilityID, usagePct) {
+	var badgePoints = getScene().m_rgPlayerTechTree.badge_points;
+	
+	return Math.min(
+		parseInt(badgePoints / getScene().m_rgTuningData.abilities[ABILITIES.WORMHOLE].badge_points_cost),
+		maxItemsStillUsable(abilityID, usagePct)
+	);
+}
+
 function useAutoBadgePurchase() {
 	if(!enableAutoBadgePurchase) { return; }
+	
+	//Alert
+	window.ShowAlertDialog(
+		'Automagic BP Purchaser',
+		'<h3 style="color:#FF5252">Just chill for a sec. The script will autoBuy your BP bonuses for you.<br><br></h3>' +
+		'<h3 style="color:yellow">You have ' + getScene().m_rgPlayerTechTree.badge_points + ' badgePoints to spend. This may take a little while, so hold tight. The more BP you have, the longer it will take.</h3>' +
 
-	// id = ability
-	// ratio = how much of the remaining badges to spend
+		'<p style="color:yellow">(Note: This dialog will NOT autoclose. Any additional badgePoints remaining after a little while, feel free to distribute however you feel.)</p>'
+	);
 	
-	//Note: this isn't an actual ratio, because badge points get reduced and the values don't add to 1
-	//For now, this is not a problem, but for stylistic reasons, should eventually be changed.
+	var badgePoints = getScene().m_rgPlayerTechTree.badge_points;
 	
-	//Regular users buy ratio
-	
-	
-	if (likeNewOn100 == 1 && wormholeOn100 == 1) {
-		// High Level, "Waste Not" Users
-		var abilityPriorityList = [
-			{ id: ABILITIES.WORMHOLE,   ratio: 0.5 },
-			{ id: ABILITIES.LIKE_NEW,   ratio: 1 },
-			{ id: ABILITIES.CRIT,       ratio: 1 },
-			{ id: ABILITIES.TREASURE,   ratio: 1 },
-			{ id: ABILITIES.PUMPED_UP,  ratio: 1 },
-		];
-	} else if (likeNewOn100 == 1) {
-		// Like New Buyers
-		var abilityPriorityList = [
-			{ id: ABILITIES.WORMHOLE,   ratio: 0 },
-			{ id: ABILITIES.LIKE_NEW,   ratio: 1 },
-			{ id: ABILITIES.CRIT,       ratio: 1 },
-			{ id: ABILITIES.TREASURE,   ratio: 1 },
-			{ id: ABILITIES.PUMPED_UP,  ratio: 1 },
-		];
-	} else {
-		// Regular User Buy Ratio
-		var abilityPriorityList = [
-			{ id: ABILITIES.WORMHOLE,   ratio: 1 },
-			{ id: ABILITIES.LIKE_NEW,   ratio: 0 },
-			{ id: ABILITIES.CRIT,       ratio: 1 },
-			{ id: ABILITIES.TREASURE,   ratio: 1 },
-			{ id: ABILITIES.PUMPED_UP,  ratio: 1 },
-		];
-	}
-	
-	var badgePoints = s().m_rgPlayerTechTree.badge_points;
-	var abilityData = s().m_rgTuningData.abilities;
+	var abilityData = getScene().m_rgTuningData.abilities;
 	var abilityPurchaseQueue = [];
+	
+	// id = ability
+	// usagePct = percent of time this ability will be spammed.
+	
+	var abilityPriorityList = [
+		{ id: ABILITIES.WORMHOLE,	usagePct: 0.2 },
+		{ id: ABILITIES.LIKE_NEW,	usagePct:  0.2 },
+		{ id: ABILITIES.CRIT,		usagePct: 1 },
+		{ id: ABILITIES.TREASURE,	usagePct: 1 },
+		{ id: ABILITIES.PUMPED_UP,	usagePct: 1 },
+		{ id: ABILITIES.FEELING_LUCKY,	usagePct: 1 },
+		{ id: ABILITIES.RESURRECTION,	usagePct: 1 },
+		{ id: ABILITIES.GOD_MODE,	usagePct: 1 },
+		{ id: ABILITIES.GOD_MODE,	usagePct: 1 },
+		{ id: ABILITIES.MAX_ELEMENTAL_DAMAGE,	usagePct: 1 },
+		{ id: ABILITIES.RAINING_GOLD,	usagePct: 1 },
+		{ id: ABILITIES.STEAL_HEALTH,	usagePct: 1 },
+		{ id: ABILITIES.CRIPPLE_SPAWNER,	usagePct: 1 }, 
+		{ id: ABILITIES.REFLECT_DAMAGE,	usagePct: 1 },
+		{ id: ABILITIES.CRIPPLE_MONSTER,	usagePct: 1 },
+		{ id: ABILITIES.THROW_MONEY_AT_SCREEN,	usagePct: 1 },
+	];
+	
+	// Attempt to automatically determine if a user should be a LN
+	var maxUsableWormholes = maxItemsStillUsable(ABILITIES.WORMHOLE, 0.2); // Currently, this is 30240 WHs on Round start, and decreases over tim
 
 	for (var i = 0; i < abilityPriorityList.length; i++) {
 		var id = abilityPriorityList[i].id;
-		var ratio = abilityPriorityList[i].ratio;
-		var cost = abilityData[id].badge_points_cost;
-		var portion = parseInt(badgePoints * ratio);
-		badgePoints -= portion;
-
-		while(portion >= cost) {
+		var usagePct = abilityPriorityList[i].usagePct;
+		
+		var toBuyCount = getBPBuyCount(id, usagePct); 
+		
+		//Hard cap crit at 100
+		if(id == ABILITIES.CRIT)
+			toBuyCount = Math.min(toBuyCount, 89); // Max of 89 crit items (puts you at 99.000000149011612% crit chance)
+		
+		// Buy the item the specified number of times
+		for(var j=0; j < toBuyCount; j++ )
 			abilityPurchaseQueue.push(id);
-			portion -= cost;
-		}
-
-		badgePoints += portion;
+		
+		// Decrement our badge points remaining
+		badgePoints -= toBuyCount * abilityData[id].badge_points_cost;
+		getScene().m_rgPlayerTechTree.badge_points = badgePoints;
 	}
-
-	s().m_rgPurchaseItemsQueue = s().m_rgPurchaseItemsQueue.concat(abilityPurchaseQueue);
-	s().m_UI.UpdateSpendBadgePointsDialog();
+	
+	//apply the purchase queue we just made
+	getScene().m_rgPurchaseItemsQueue = getScene().m_rgPurchaseItemsQueue.concat(abilityPurchaseQueue);
+	getScene().m_UI.UpdateSpendBadgePointsDialog();
+	
+	
+	// Any remaining BP is useless, just spend it all on pumped up to deplete BP
+	var dumpAbility = ABILITIES.PUMPED_UP;
+	var dumpCost = abilityData[dumpAbility].badge_points_cost;
+	//Loop this cause sometimes you don't actually spend everything
+	while(getScene().m_rgPlayerTechTree.badge_points >  0) {
+		badgePoints = getScene().m_rgPlayerTechTree.badge_points;
+		for(badgePoints; badgePoints > 0;  badgePoints -= dumpCost)
+			abilityPurchaseQueue.push(ABILITIES.PUMPED_UP);
+		
+		getScene().m_rgPlayerTechTree.badge_points = badgePoints;
+		
+		//apply the purchase queue we just made
+		getScene().m_rgPurchaseItemsQueue = getScene().m_rgPurchaseItemsQueue.concat(abilityPurchaseQueue);
+		getScene().m_UI.UpdateSpendBadgePointsDialog();
+		
+	}
+	
+	
+	// Force Hide the BP store (after half a second, since if you do it too fast steam re-opens it)
+	$J("#spend_badge_points_dialog").hide();
 }
 
 function toggleAutoBadgePurchase(event) {
@@ -766,6 +1107,8 @@ function toggleAutoBadgePurchase(event) {
 	enableAutoBadgePurchase = value;
 }
 
+/*
+// NOTE: THIS IS NEVER CALLED ANYMORE, AS IT IS DETRIMENTAL TO WORMHOLE STRATS
 function useAllAbilities() {
 	for(var key in ABILITIES) {
 		if(ABILITIES[key] == ABILITIES.WORMHOLE) { continue; }
@@ -773,6 +1116,7 @@ function useAllAbilities() {
 		tryUsingAbility(ABILITIES[key]);
 	}
 }
+*/
 
 function isBossLevel(level) {
 	return level % 100 === 0
@@ -821,20 +1165,20 @@ function levelsPerSec() {
 	})
 
 	return Math.round(((getGameLevel() - lastLevelTimeTaken.slice(-1).pop().level - levelsGainedFromBosses)
-			/ (s().m_rgGameData.timestamp - lastLevelTimeTaken.slice(-1).pop().timeStarted - timeSpentOnBosses)) * 1000 ) / 1000;
+			/ (getScene().m_rgGameData.timestamp - lastLevelTimeTaken.slice(-1).pop().timeStarted - timeSpentOnBosses)) * 1000 ) / 1000;
 }
 
 
 //at level 100 spam WH, Like New, and medics, based on your role
 function useAbilitiesAt100() {
 
-	if (wormholeOn100 && !w.SteamDB_Wormhole_Timer) {
+	if (getAbilityItemQuantity(ABILITIES.WORMHOLE) > 0 && !window.SteamDB_Wormhole_Timer) {
 		advLog("At level % 100 = 0, forcing the use of wormholes nonstop", 2);
-		w.SteamDB_Wormhole_Timer = w.setInterval(function(){
+		window.SteamDB_Wormhole_Timer = window.setInterval(function(){
 			if (getGameLevel() % 100 !== 0) {
 				// We're not on a *00 level anymore, stop!!
-				w.clearInterval(w.SteamDB_Wormhole_Timer);
-				w.SteamDB_Wormhole_Timer = false;
+				window.clearInterval(window.SteamDB_Wormhole_Timer);
+				window.SteamDB_Wormhole_Timer = false;
 				return;
 			}
 			if (bHaveItem(ABILITIES.WORMHOLE)) triggerAbility(ABILITIES.WORMHOLE); //wormhole
@@ -842,19 +1186,26 @@ function useAbilitiesAt100() {
 	}
 	
 	//This should equate to approximately 1.8 Like News per second
-	if (likeNewOn100) {
+	//Spam them indicriminantley if you have a lot
+	if (getAbilityItemQuantity(ABILITIES.LIKE_NEW) > 500) {
 		advLog("At level % 100 = 0, forcing the use of a like new", 2);
 		tryUsingAbility(ABILITIES.LIKE_NEW, false, true); //like new
-	} else {
-		// if people have LIKE_NEWs, there's no harm in letting them use them
-		if (Math.random() <= 0.05) {
-			tryUsingAbility(ABILITIES.LIKE_NEW, false, true);
-		}
+	}
+	// If you only have a few remaining, only use them occasionally
+	else if (Math.random() <= 0.05) {
+		tryUsingAbility(ABILITIES.LIKE_NEW, false, true);
 	}
 	
-	if (medicOn100) {
+	//Use Medics
+	if (hasAbility(ABILITIES.MEDICS)) {
 		advLog("At level % 100 = 0, forcing the use of a medic", 2);
 		tryUsingAbility(ABILITIES.MEDICS, false, true); //medics
+	}
+	
+	
+	if (hasAbility(ABILITIES.FEELING_LUCKY)) {
+		advLog("At level % 100 = 0, forcing the use of a Feeling Lucky", 2);
+		tryUsingAbility(ABILITIES.FEELING_LUCKY, false, true); //medics
 	}
 }
 
@@ -865,15 +1216,15 @@ function useAutoPurchaseAbilities() {
 
 	if(elms.length === 0) { return; }
 
-	var pData = s().m_rgPlayerData;
+	var pData = getScene().m_rgPlayerData;
 
 	[].forEach.call(elms, function(elm) {
 		if(elm.style.display !== "") { return; }
 
 		var idx = parseInt(elm.id.split('_')[1]);
 
-		if(s().GetUpgradeCost(idx) < pData.gold) {
-			s().TryUpgrade(elm.querySelector('.link'));
+		if(getScene().GetUpgradeCost(idx) < pData.gold) {
+			getScene().TryUpgrade(elm.querySelector('.link'));
 		}
 	});
 }
@@ -907,12 +1258,12 @@ function useAutoUpgrade() {
 	if(enableAutoUpgradeElemental && ELEMENTS.LockedElement !== -1) { upg_order.push(ELEMENTS.LockedElement+3); }
 	var upg_map = {};
 	upg_order.forEach(function(i) { upg_map[i] = {}; });
-	var pData = s().m_rgPlayerData;
-	var pTree = s().m_rgPlayerTechTree;
-	var cache = s().m_UI.m_rgElementCache;
+	var pData = getScene().m_rgPlayerData;
+	var pTree = getScene().m_rgPlayerTechTree;
+	var cache = getScene().m_UI.m_rgElementCache;
 
 	// calculate hp threshold based on mob dps
-	var mob = s().m_rgEnemies[0];
+	var mob = getScene().m_rgEnemies[0];
 	if(!!mob) {
 		var threshold = mob.m_data.dps * 300 * 2.5;
 		if(threshold > autoupgrade_hp_threshold) {
@@ -921,19 +1272,19 @@ function useAutoUpgrade() {
 	}
 
 	var upg_enabled = [
-		enableAutoUpgradeClick && s().m_rgGameData.level > upgThreshold,
+		enableAutoUpgradeClick && getScene().m_rgGameData.level > upgThreshold,
 		enableAutoUpgradeHP && pTree.max_hp < Math.max(100000, autoupgrade_hp_threshold),
-		enableAutoUpgradeDPS && s().m_rgGameData.level > upgThreshold,
+		enableAutoUpgradeDPS && getScene().m_rgGameData.level > upgThreshold,
 	];
 
 	// loop over all upgrades and find the most cost effective ones
-	s().m_rgTuningData.upgrades.forEach(function(upg, idx) {
+	getScene().m_rgTuningData.upgrades.forEach(function(upg, idx) {
 		if(upg_map.hasOwnProperty(upg.type)) {
 
-			var cost = s().GetUpgradeCost(idx) / parseFloat(upg.multiplier);
+			var cost = getScene().GetUpgradeCost(idx) / parseFloat(upg.multiplier);
 
 			if(!upg_map[upg.type].hasOwnProperty('idx') || upg_map[upg.type].cost_per_mult > cost) {
-				if(upg.hasOwnProperty('required_upgrade') && s().GetUpgradeLevel(upg.required_upgrade) < upg.required_upgrade_level) { return; }
+				if(upg.hasOwnProperty('required_upgrade') && getScene().GetUpgradeLevel(upg.required_upgrade) < upg.required_upgrade_level) { return; }
 
 				upg_map[upg.type] = {
 					'idx': idx,
@@ -988,10 +1339,10 @@ function useAutoUpgrade() {
 
 		var key = 'upgr_' + tree.idx;
 
-		if(s().GetUpgradeCost(tree.idx) < pData.gold && cache.hasOwnProperty(key)) {
+		if(getScene().GetUpgradeCost(tree.idx) < pData.gold && cache.hasOwnProperty(key)) {
 			var elm = cache[key];
 			// valve pls...
-			s().TryUpgrade(!!elm.find ? elm.find('.link')[0] : elm.querySelector('.link'));
+			getScene().TryUpgrade(!!elm.find ? elm.find('.link')[0] : elm.querySelector('.link'));
 			autoupgrade_update_hilight = true;
 		}
 	}
@@ -1053,9 +1404,9 @@ function toggleAutoPurchase(event) {
 function refreshPlayerData() {
 	advLog("Refreshing player data", 2);
 
-	w.g_Server.GetPlayerData(
+	window.g_Server.GetPlayerData(
 		function(rgResult) {
-			var instance = s();
+			var instance = getScene();
 
 			if( rgResult.response.player_data ) {
 				instance.m_rgPlayerData = rgResult.response.player_data;
@@ -1067,7 +1418,7 @@ function refreshPlayerData() {
 			if( rgResult.response.tech_tree ) {
 				instance.m_rgPlayerTechTree = rgResult.response.tech_tree;
 				if( rgResult.response.tech_tree.upgrades ) {
-					instance.m_rgPlayerUpgrades = w.V_ToArray( rgResult.response.tech_tree.upgrades );
+					instance.m_rgPlayerUpgrades = window.V_ToArray( rgResult.response.tech_tree.upgrades );
 				} else {
 					instance.m_rgPlayerUpgrades = [];
 				}
@@ -1091,7 +1442,7 @@ function makeNumber(name, desc, value, min, max, listener) {
 	number.min = min;
 	number.max = max;
 	number.onchange = listener;
-	w[number.name] = number;
+	window[number.name] = number;
 
 	label.appendChild(number);
 	label.appendChild(description);
@@ -1099,73 +1450,33 @@ function makeNumber(name, desc, value, min, max, listener) {
 	return label;
 }
 
-	function makeDropdown(name, desc, value, values, listener) {
-		var label = document.createElement("label");
-		var description = document.createTextNode(desc);
-		var drop = document.createElement("select");
-
-		for(var k in values) {
-			var choice = document.createElement("option");
-			choice.value = values[k];
-			choice.textContent = k;
-			if(values[k] == value) {
-				choice.selected = true;
-			}
-			drop.appendChild(choice);
-		}
-
-		drop.name = name;
-		drop.style.marginRight = "5px";
-		drop.onchange = listener;
-
-		label.appendChild(drop);
-		label.appendChild(description);
-		label.appendChild(document.createElement("br"));
-		return label;
-	}
-
-function makeCheckBox(name, desc, state, listener, reqRefresh) {
-	var asterisk = document.createElement('span');
-	asterisk.className = "asterisk";
-	asterisk.appendChild(document.createTextNode("*"));
-
+function makeDropdown(name, desc, value, values, listener) {
 	var label = document.createElement("label");
 	var description = document.createTextNode(desc);
-	var checkbox = document.createElement("input");
+	var drop = document.createElement("select");
 
-	checkbox.type = "checkbox";
-	checkbox.name = name;
-	checkbox.checked = state;
-	checkbox.onclick = listener;
-	w[checkbox.name] = checkbox.checked;
-
-	label.appendChild(checkbox);
-	label.appendChild(description);
-	if(reqRefresh) {
-		label.appendChild(asterisk);
+	for(var k in values) {
+		var choice = document.createElement("option");
+		choice.value = values[k];
+		choice.textContent = k;
+		if(values[k] == value) {
+			choice.selected = true;
+		}
+		drop.appendChild(choice);
 	}
+
+	drop.name = name;
+	drop.style.marginRight = "5px";
+	drop.onchange = listener;
+
+	label.appendChild(drop);
+	label.appendChild(description);
 	label.appendChild(document.createElement("br"));
 	return label;
 }
 
-function handleEvent(event) {
-	handleCheckBox(event);
-}
-
-function handleCheckBox(event) {
-	var checkbox = event.target;
-	setPreference(checkbox.name, checkbox.checked);
-
-	w[checkbox.name] = checkbox.checked;
-	return checkbox.checked;
-}
-
-function toggleAutoClicker(event) {
-	var value = enableAutoClicker;
-
-	if(event !== undefined) {
-		value = handleCheckBox(event);
-	}
+function toggleAutoClicker() {
+	var value = enableAutoClicker = !enableAutoClicker;
 
 	if(value) {
 		currentClickRate = clickRate;
@@ -1174,35 +1485,29 @@ function toggleAutoClicker(event) {
 	}
 }
 
-function toggleFingering(event) {
-	var value = enableFingering;
+function toggleFingering() {
+	var value = enableFingering = !enableFingering;
 
-	w.CSceneGame.prototype.ClearNewPlayer = function(){};
+	window.CSceneGame.prototype.ClearNewPlayer = function(){};
 
-	if(!s().m_spriteFinger) {
-		w.WebStorage.SetLocal('mg_how2click', 0);
-		s().CheckNewPlayer();
-		w.WebStorage.SetLocal('mg_how2click', 1);
-	}
-
-	if(event !== undefined) {
-		value = handleCheckBox(event);
+	if(!getScene().m_spriteFinger) {
+		window.WebStorage.SetLocal('mg_how2click', 0);
+		getScene().CheckNewPlayer();
+		window.WebStorage.SetLocal('mg_how2click', 1);
 	}
 
 	if(value) {
-		s().m_containerParticles.addChild(s().m_spriteFinger);
+		getScene().m_containerParticles.addChild(getScene().m_spriteFinger);
 	} else {
-		s().m_containerParticles.removeChild(s().m_spriteFinger);
+		getScene().m_containerParticles.removeChild(getScene().m_spriteFinger);
 	}
 	document.getElementById('newplayer').style.display = 'none';
+	
+	updateToggle("pointer", enableFingering);
 }
 
-function toggleAutoRefresh(event) {
-	var value = enableAutoRefresh;
-
-	if(event !== undefined) {
-		value = handleCheckBox(event);
-	}
+function toggleAutoRefresh() {
+	var value = enableAutoRefresh = !enableAutoRefresh;
 
 	if(value) {
 		autoRefreshPage(autoRefreshMinutes);
@@ -1211,39 +1516,37 @@ function toggleAutoRefresh(event) {
 	}
 }
 
-function toggleRenderer(event) {
-	var value = disableRenderer;
+function toggleRenderer() {
+	var value = disableRenderer = !disableRenderer;
 
-	if (event !== undefined) {
-		value = disableRenderer = handleCheckBox(event);
-	}
-
-	var ticker = w.PIXI.ticker.shared;
+	var ticker = window.PIXI.ticker.shared;
 
 	if (!value) {
 		ticker.autoStart = true;
 		ticker.start();
 
-		w.g_Minigame.Render = trt_oldRender;
-		w.g_Minigame.Render();
+		window.g_Minigame.Render = trt_oldRender;
+		window.g_Minigame.Render();
 	} else {
 		ticker.autoStart = false;
 		ticker.stop();
 
-		w.g_Minigame.Render = function() {};
+		window.g_Minigame.Render = function() {};
 	}
+	updateToggle("limitFPS", disableRenderer);
 }
 
 var oldTvBg = "";
 function toggleChen(event) {
 	enableChen = !enableChen;
 	if (enableChen) {
-		oldTvBg = w.$J('.tv_ui').css('background-image');
-		w.$J('.tv_ui').css('background-image', 'url(//i.imgur.com/QNSzdlS.png)');
+		oldTvBg = window.$J('.tv_ui').css('background-image');
+		window.$J('.tv_ui').css('background-image', 'url(//i.imgur.com/QNSzdlS.png)');
 	} else {
-		w.$J('.tv_ui').css('background-image', oldTvBg);
+		window.$J('.tv_ui').css('background-image', oldTvBg);
 	}
 
+	updateToggle("chen", enableChen);
 }
 
 function autoRefreshPage(autoRefreshMinutes){
@@ -1261,74 +1564,60 @@ function autoRefreshHandler() {
 		setTimeout(autoRefreshHandler, autoRefreshFirstBossDelayStep);
 	} else {
 		advLog('Refreshing (not a boss level)', 5);
-		w.location.reload(true);
+		window.location.reload(true);
 	}
 }
 
-function toggleElementLock(event) {
-	var value = enableElementLock;
-
-	if(event !== undefined) {
-		value = handleCheckBox(event);
-	}
+function toggleElementLock() {
+	var value = enableElementLock = !enableElementLock;
 
 	if(value) {
 		lockElements();
 	} else {
 		unlockElements();
 	}
+	
+	updateToggle("elementLock", enableElementLock);
 }
 
-function toggleCritText(event) {
-	var value = removeCritText;
-
-	if(event !== undefined) {
-		value = handleCheckBox(event);
-	}
+function toggleCritText() {
+	var value = removeCritText = !removeCritText;
 
 	if (value) {
 		// Replaces the entire crit display function.
-		s().DoCritEffect = function() {};
+		getScene().DoCritEffect = function() {};
 	} else {
-		s().DoCritEffect = trt_oldCrit;
+		getScene().DoCritEffect = trt_oldCrit;
 	}
+	
+	updateToggle("critText", value);
 }
 
 function toggleAllText(event) {
-	var value = removeAllText;
-
-	if(event !== undefined) {
-		value = handleCheckBox(event);
-	}
+	var value = removeAllText = !removeAllText;
 
 	if (value) {
 		// Replaces the entire text function.
-		s().m_rgClickNumbers.push = function(elem){
+		getScene().m_rgClickNumbers.push = function(elem){
 			elem.container.removeChild(elem);
 		};
 	} else {
-		s().m_rgClickNumbers.push = trt_oldPush;
+		getScene().m_rgClickNumbers.push = trt_oldPush;
 	}
-}
-
-function toggleTrackTroll(event) {
-	var value = enableTrollTrack;
-
-	if(event !== undefined) {
-		value = handleCheckBox(event);
-	}
-
+	
 	if(value) {
 		CUI.prototype.UpdateLog = localUpdateLog;
 	} else {
 		CUI.prototype.UpdateLog = originalUpdateLog;
 	}
+	
+	updateToggle("allText", value);
 }
 
-function updateLogLevel(event) {
-	if(event !== undefined) {
-		logLevel = event.target.value;
-	}
+function toggleTrackTroll() {
+	var value = enableTrackTroll = !enableTrollTrack;
+	
+	updateToggle("trollTracker", value);
 }
 
 function setPreference(key, value) {
@@ -1376,8 +1665,8 @@ function estimateJumps() {
 	var wormholesNow = 0;
 	//Gather total wormholes active.
 	for (var i = 0; i <= 2; i++) {
-		if (typeof w.g_Minigame.m_CurrentScene.m_rgLaneData[i].abilities[26] !== 'undefined') {
-			wormholesNow += w.g_Minigame.m_CurrentScene.m_rgLaneData[i].abilities[26];
+		if (typeof window.g_Minigame.m_CurrentScene.m_rgLaneData[i].abilities[26] !== 'undefined') {
+			wormholesNow += window.g_Minigame.m_CurrentScene.m_rgLaneData[i].abilities[26];
 		}
 	}
 	//During baws round fc
@@ -1397,18 +1686,18 @@ function estimateJumps() {
 		predictLastWormholesUpdate = 0;
 		return 0;
 	}
-	return predictJumps / predictTicks * (s().m_rgGameData.timestamp - s().m_rgGameData.timestamp_level_start);
+	return predictJumps / predictTicks * (getScene().m_rgGameData.timestamp - getScene().m_rgGameData.timestamp_level_start);
 }
 
 function lockElements() {
 	var elementMultipliers = [
-		s().m_rgPlayerTechTree.damage_multiplier_fire,
-		s().m_rgPlayerTechTree.damage_multiplier_water,
-		s().m_rgPlayerTechTree.damage_multiplier_air,
-		s().m_rgPlayerTechTree.damage_multiplier_earth
+		getScene().m_rgPlayerTechTree.damage_multiplier_fire,
+		getScene().m_rgPlayerTechTree.damage_multiplier_water,
+		getScene().m_rgPlayerTechTree.damage_multiplier_air,
+		getScene().m_rgPlayerTechTree.damage_multiplier_earth
 	];
 
-	var elem = (parseInt(w.g_steamID.slice(-3), 10) + parseInt(w.g_GameID, 10)) % 4;
+	var elem = (parseInt(window.g_steamID.slice(-3), 10) + parseInt(window.g_GameID, 10)) % 4;
 
 	// If more than two elements are leveled to 3 or higher, do not enable lock
 	var leveled = 0;
@@ -1452,27 +1741,27 @@ function lockToElement(element) {
 }
 
 function displayText(x, y, strText, color) {
-	var text = new w.PIXI.Text(strText, {font: "35px 'Press Start 2P'", fill: color, stroke: '#000', strokeThickness: 2 });
+	var text = new window.PIXI.Text(strText, {font: "35px 'Press Start 2P'", fill: color, stroke: '#000', strokeThickness: 2 });
 
 	text.x = x;
 	text.y = y;
 
-	s().m_containerUI.addChild( text );
-	text.container = s().m_containerUI;
+	getScene().m_containerUI.addChild( text );
+	text.container = getScene().m_containerUI;
 
-	var e = new w.CEasingSinOut( text.y, -200, 1000 );
+	var e = new window.CEasingSinOut( text.y, -200, 1000 );
 	e.parent = text;
 	text.m_easeY = e;
 
-	e = new w.CEasingSinOut( 2, -2, 1000 );
+	e = new window.CEasingSinOut( 2, -2, 1000 );
 	e.parent = text;
 	text.m_easeAlpha = e;
 
-	s().m_rgClickNumbers.push(text);
+	getScene().m_rgClickNumbers.push(text);
 }
 
 function updatePlayersInGame() {
-	var laneData = s().m_rgLaneData;
+	var laneData = getScene().m_rgLaneData;
 	var totalPlayers =
 		laneData[ 0 ].players +
 		laneData[ 1 ].players +
@@ -1481,10 +1770,10 @@ function updatePlayersInGame() {
 }
 
 function fixActiveCapacityUI() {
-	w.$J('.tv_ui').css('background-image', 'url(//i.imgur.com/9R0436k.gif)');
-	w.$J('#activeinlanecontainer').css('height', '154px');
-	w.$J('#activitycontainer').css('height', '270px');
-	w.$J('#activityscroll').css('height', '270px');
+	window.$J('.tv_ui').css('background-image', 'url(//i.imgur.com/9R0436k.gif)');
+	window.$J('#activeinlanecontainer').css('height', '154px');
+	window.$J('#activitycontainer').css('height', '270px');
+	window.$J('#activityscroll').css('height', '270px');
 }
 
 function goToLaneWithBestTarget(level) {
@@ -1525,7 +1814,7 @@ function goToLaneWithBestTarget(level) {
 		// gather all the enemies of the specified type.
 		for (i = 0; i < 3; i++) {
 			for (var j = 0; j < 4; j++) {
-				var enemy = s().GetEnemy(i, j);
+				var enemy = getScene().GetEnemy(i, j);
 				if (enemy && enemy.m_data.type == enemyTypePriority[k]) {
 					enemies[enemies.length] = enemy;
 				}
@@ -1541,23 +1830,23 @@ function goToLaneWithBestTarget(level) {
 				// Maximize compability with upstream
 				i = sortedLanes[notI];
 				// ignore if lane is empty
-				if(s().m_rgGameData.lanes[i].dps === 0) {
+				if(getScene().m_rgGameData.lanes[i].dps === 0) {
 					continue;
 				}
 				var stacks = 0;
-				if(typeof s().m_rgLaneData[i].abilities[ABILITIES.RAINING_GOLD] != 'undefined') {
-					stacks = s().m_rgLaneData[i].abilities[ABILITIES.RAINING_GOLD];
+				if(typeof getScene().m_rgLaneData[i].abilities[ABILITIES.RAINING_GOLD] != 'undefined') {
+					stacks = getScene().m_rgLaneData[i].abilities[ABILITIES.RAINING_GOLD];
 					advLog('[Gold rain] stacks: ' + stacks, 5);
 
-					for(var m = 0; m < s().m_rgEnemies.length; m++){
-						if(s().m_rgEnemies[m].m_nLane != i){
+					for(var m = 0; m < getScene().m_rgEnemies.length; m++){
+						if(getScene().m_rgEnemies[m].m_nLane != i){
 							continue;
 						}
 						advLog("[Gold rain] An enemy exists in raining gold lane: " + (i + 1), 5);
-						var enemyGold = s().m_rgEnemies[m].m_data.gold;
+						var enemyGold = getScene().m_rgEnemies[m].m_data.gold;
 						if(stacks * enemyGold > potential) {
 							potential = stacks * enemyGold;
-							preferredTarget = s().m_rgEnemies[m].m_nID;
+							preferredTarget = getScene().m_rgEnemies[m].m_nID;
 							preferredLane = i;
 						}
 					}
@@ -1573,10 +1862,10 @@ function goToLaneWithBestTarget(level) {
 			if (enemies[i] && !enemies[i].m_bIsDestroyed) {
 				// Only select enemy and lane if the preferedLane matches the potential enemy lane
 				if(lowHP < 1 || enemies[i].m_flDisplayedHP < lowHP) {
-					var element = s().m_rgGameData.lanes[enemies[i].m_nLane].element;
+					var element = getScene().m_rgGameData.lanes[enemies[i].m_nLane].element;
 
-					var dmg = s().CalculateDamage(
-						s().m_rgPlayerTechTree.dps,
+					var dmg = getScene().CalculateDamage(
+						getScene().m_rgPlayerTechTree.dps,
 						element
 						);
 
@@ -1626,15 +1915,15 @@ function goToLaneWithBestTarget(level) {
 
 	// go to the chosen lane
 	if (targetFound) {
-		if (s().m_nExpectedLane != lowLane) {
+		if (getScene().m_nExpectedLane != lowLane) {
 			advLog('Switching to lane' + lowLane, 3);
-			s().TryChangeLane(lowLane);
+			getScene().TryChangeLane(lowLane);
 		}
 
 		// target the chosen enemy
-		if (s().m_nTarget != lowTarget) {
+		if (getScene().m_nTarget != lowTarget) {
 			advLog('Switching targets', 3);
-			s().TryChangeTarget(lowTarget);
+			getScene().TryChangeTarget(lowTarget);
 		}
 	}
 
@@ -1666,7 +1955,7 @@ function hasMaxCriticalOnLane() {
 function useAbilities(level)
 {
 
-	var currentLane = s().m_nExpectedLane;
+	var currentLane = getScene().m_nExpectedLane;
 
 	var i = 0;
 	var enemyCount = 0;
@@ -1678,7 +1967,7 @@ function useAbilities(level)
 	// Cripple Monster
 	if(canUseAbility(ABILITIES.CRIPPLE_MONSTER)) {
 		if (level > CONTROL.speedThreshold && level % CONTROL.rainingRounds !== 0 && level % 10 === 0) {
-			enemy = s().GetEnemy(s().m_rgPlayerData.current_lane, s().m_rgPlayerData.target);
+			enemy = getScene().GetEnemy(getScene().m_rgPlayerData.current_lane, getScene().m_rgPlayerData.target);
 			if (enemy && enemy.m_data.type == ENEMY_TYPE.BOSS) {
 				enemyBossHealthPercent = enemy.m_flDisplayedHP / enemy.m_data.max_hp;
 				if (enemyBossHealthPercent>0.5){
@@ -1732,9 +2021,12 @@ function useAbilities(level)
 	// Good Luck Charms / Crit
 	if(!hasMaxCriticalOnLane())
 	{
-		if (tryUsingAbility(ABILITIES.CRIT)){
-			// Crits is purchased, cooled down, and needed. Trigger it.
-			advLog('Crit chance is always good.', 3);
+		//Only use crit if we aren't at cap, since people have reported it goes back to 0
+		if(getScene().m_rgPlayerTechTree.crit_percentage <= 99) {
+			if (tryUsingAbility(ABILITIES.CRIT)){
+				// Crits is purchased, cooled down, and needed. Trigger it.
+				advLog('Crit chance is always good.', 3);
+			}
 		}
 	}
 	if(!hasMaxCriticalOnLane())
@@ -1752,7 +2044,7 @@ function useAbilities(level)
 		enemySpawnerExists = false;
 		//Count each slot in lane
 		for (i = 0; i < 4; i++) {
-			enemy = s().GetEnemy(currentLane, i);
+			enemy = getScene().GetEnemy(currentLane, i);
 			if (enemy) {
 				enemyCount++;
 				if (enemy.m_data.type === 0) {
@@ -1775,7 +2067,7 @@ function useAbilities(level)
 		enemySpawnerExists = false;
 		//Count each slot in lane
 		for (i = 0; i < 4; i++) {
-			enemy = s().GetEnemy(currentLane, i);
+			enemy = getScene().GetEnemy(currentLane, i);
 			if (enemy) {
 				enemyCount++;
 				if (enemy.m_data.type === 0) {
@@ -1794,9 +2086,9 @@ function useAbilities(level)
 	// Morale Booster
 	if (canUseAbility(ABILITIES.MORALE_BOOSTER)) {
 		var numberOfWorthwhileEnemies = 0;
-		for(i = 0; i < s().m_rgGameData.lanes[s().m_nExpectedLane].enemies.length; i++) {
+		for(i = 0; i < getScene().m_rgGameData.lanes[getScene().m_nExpectedLane].enemies.length; i++) {
 			//Worthwhile enemy is when an enamy has a current hp value of at least 1,000,000
-			if(s().m_rgGameData.lanes[s().m_nExpectedLane].enemies[i].hp > 1000000) {
+			if(getScene().m_rgGameData.lanes[getScene().m_nExpectedLane].enemies[i].hp > 1000000) {
 				numberOfWorthwhileEnemies++;
 			}
 		}
@@ -1810,7 +2102,7 @@ function useAbilities(level)
 
 	// Tactical Nuke
 	if(canUseAbility(ABILITIES.TACTICAL_NUKE) && (level % 100 !== 0) && (level % 100) <= 97) {
-		enemy = s().GetEnemy(s().m_rgPlayerData.current_lane, s().m_rgPlayerData.target);
+		enemy = getScene().GetEnemy(getScene().m_rgPlayerData.current_lane, getScene().m_rgPlayerData.target);
 		// check whether current target is a boss
 		if (enemy && enemy.m_data.type == ENEMY_TYPE.BOSS) {
 			if (level >= CONTROL.speedThreshold) { // Start nuking bosses at level CONTROL.speedThreshold
@@ -1829,7 +2121,7 @@ function useAbilities(level)
 			//Check that the lane has a spawner and record it's health percentage
 			//Count each slot in lane
 			for (i = 0; i < 4; i++) {
-				enemy = s().GetEnemy(currentLane, i);
+				enemy = getScene().GetEnemy(currentLane, i);
 				if (enemy && enemy.m_data.type == ENEMY_TYPE.SPAWNER) {
 					enemySpawnerHealthPercent = enemy.m_flDisplayedHP / enemy.m_data.max_hp;
 					// If there is a spawner and it's health is between 60% and 30%, nuke it!
@@ -1852,7 +2144,7 @@ function useAbilities(level)
 		enemySpawnerHealthPercent = 0.0;
 		//Count each slot in lane
 		for (i = 0; i < 4; i++) {
-			enemy = s().GetEnemy(currentLane, i);
+			enemy = getScene().GetEnemy(currentLane, i);
 			if (enemy) {
 				if (enemy.m_data.type === 0) {
 					enemySpawnerExists = true;
@@ -1873,7 +2165,7 @@ function useAbilities(level)
 		// only use if the speed threshold has not been reached,
 		// or it's a designated gold round after the threshold
 		if (level > CONTROL.disableGoldRainLevels && (level < CONTROL.speedThreshold || level % CONTROL.rainingRounds === 0)) {
-			enemy = s().GetEnemy(s().m_rgPlayerData.current_lane, s().m_rgPlayerData.target);
+			enemy = getScene().GetEnemy(getScene().m_rgPlayerData.current_lane, getScene().m_rgPlayerData.target);
 			// check if current target is a boss, otherwise its not worth using the gold rain
 			if (enemy && enemy.m_data.type == ENEMY_TYPE.BOSS) {
 				enemyBossHealthPercent = enemy.m_flDisplayedHP / enemy.m_data.max_hp;
@@ -1890,7 +2182,7 @@ function useAbilities(level)
 	// Metal Detector
 	if(canUseAbility(ABILITIES.METAL_DETECTOR)) {
 
-		enemy = s().GetEnemy(s().m_rgPlayerData.current_lane, s().m_rgPlayerData.target);
+		enemy = getScene().GetEnemy(getScene().m_rgPlayerData.current_lane, getScene().m_rgPlayerData.target);
 		// check if current target is a boss, otherwise we won't use metal detector
 		if (enemy && enemy.m_data.type == ENEMY_TYPE.BOSS) {
 			enemyBossHealthPercent = enemy.m_flDisplayedHP / enemy.m_data.max_hp;
@@ -1909,7 +2201,7 @@ function useAbilities(level)
 
 		// check if current level is higher than 50
 		if (level > 50) {
-			enemy = s().GetTargetedEnemy();
+			enemy = getScene().GetTargetedEnemy();
 			// check if current target is a boss, otherwise we won't use metal detector
 			if (enemy && enemy.type == ENEMY_TYPE.BOSS) {
 				enemyBossHealthPercent = enemy.hp / enemy.max_hp;
@@ -1943,13 +2235,13 @@ function useAbilities(level)
 }
 
 function attemptRespawn() {
-	if ((s().m_bIsDead) && ((s().m_rgPlayerData.time_died) + 5) < (s().m_nTime)) {
-		w.RespawnPlayer();
+	if ((getScene().m_bIsDead) && ((getScene().m_rgPlayerData.time_died) + 5) < (getScene().m_nTime)) {
+		window.RespawnPlayer();
 	}
 }
 
 function bHaveItem(itemId) {
-	var items = s().m_rgPlayerTechTree.ability_items;
+	var items = getScene().m_rgPlayerTechTree.ability_items;
 
 	for(var i = 0; i < items.length; ++i) {
 		if(items[i].ability == itemId) {
@@ -1961,11 +2253,11 @@ function bHaveItem(itemId) {
 }
 
 function canUseAbility(abilityId, forceAbility) {
-	if(!s().bHaveAbility(abilityId) && !bHaveItem(abilityId)) {
+	if(!getScene().bHaveAbility(abilityId) && !bHaveItem(abilityId)) {
 		return false;
 	}
 
-	return s().GetCooldownForAbility(abilityId) <= 0 && (isAbilityEnabled(abilityId) || forceAbility);
+	return getScene().GetCooldownForAbility(abilityId) <= 0 && (isAbilityEnabled(abilityId) || forceAbility);
 }
 
 function tryUsingAbility(itemId, checkInLane, forceAbility) {
@@ -2011,35 +2303,44 @@ function triggerAbility(abilityId) {
 		// Fire this bad boy off immediately 
 		g_Server.UseAbilities($J.noop, $J.noop, {requested_abilities: [{ability: ABILITIES.WORMHOLE}]});
 	} else {
-		s().m_rgAbilityQueue.push({'ability': abilityId});
+		getScene().m_rgAbilityQueue.push({'ability': abilityId});
 	}
 
-	var nCooldownDuration = s().m_rgTuningData.abilities[abilityId].cooldown;
-	s().ClientOverride('ability', abilityId, Math.floor(Date.now() / 1000) + nCooldownDuration);
-	s().ApplyClientOverrides('ability', true);
+	var nCooldownDuration = getScene().m_rgTuningData.abilities[abilityId].cooldown;
+	getScene().ClientOverride('ability', abilityId, Math.floor(Date.now() / 1000) + nCooldownDuration);
+	getScene().ApplyClientOverrides('ability', true);
 }
 
-function toggleAbilityVisibility(abilityId, show) {
-	var vis = show === true ? "visible" : "hidden";
+function toggleAbility(abilityId, show) {
 
-	var elem = document.getElementById('ability_' + abilityId);
+	var elem = $J("#ability_" + abilityId);
 
 	// temporary
-	if(!elem) {
-		elem = document.getElementById('abilityitem_' + abilityId);
+	if(elem && elem.length == 0) {
+		elem = $J("#abilityitem_" + abilityId);
 	}
 
-	if (elem && elem.childElements() && elem.childElements().length >= 1) {
-		elem.childElements()[0].style.visibility = vis;
+	if (elem) {
+		if(show) {
+			$(elem).find(".abilityDisabledIndicator").addClass('hidden');
+			elem.unbind('click');
+			elem.click(function(e) { g_Minigame.CurrentScene().TryAbility(abilityId); return false; });
+		}
+		else {
+			$(elem).find(".abilityDisabledIndicator").removeClass('hidden');
+			elem.prop("onclick", null);
+			elem.unbind('click');
+			elem.click(function(e) { e.stopPropagation(); return false; });
+		}
 	}
 }
 
 function disableAbility(abilityId) {
-	toggleAbilityVisibility(abilityId, false);
+	toggleAbility(abilityId, false);
 }
 
 function enableAbility(abilityId) {
-	toggleAbilityVisibility(abilityId, true);
+	toggleAbility(abilityId, true);
 }
 
 function isAbilityEnabled(abilityId) {
@@ -2058,7 +2359,7 @@ function isAbilityEnabled(abilityId) {
 
 function getActiveAbilityTimeout(ability) {
   var timeout = 0;
-	var abilities = s().m_rgGameData.lanes[s().m_rgPlayerData.current_lane].active_player_abilities;
+	var abilities = getScene().m_rgGameData.lanes[getScene().m_rgPlayerData.current_lane].active_player_abilities;
 	var count = 0;
 	for(var i = 0; i < abilities.length; i++) {
 		if(abilities[i].ability == ability && abilities[i].timestamp_done > timeout) {
@@ -2070,7 +2371,7 @@ function getActiveAbilityTimeout(ability) {
 
 function getActiveAbilityLaneCount(ability) {
 	var now = getCurrentTime();
-	var abilities = s().m_rgGameData.lanes[s().m_rgPlayerData.current_lane].active_player_abilities;
+	var abilities = getScene().m_rgGameData.lanes[getScene().m_rgPlayerData.current_lane].active_player_abilities;
 	var count = 0;
 	for(var i = 0; i < abilities.length; i++) {
 		if(abilities[i].ability == ability && abilities[i].timestamp_done > now) {
@@ -2082,13 +2383,13 @@ function getActiveAbilityLaneCount(ability) {
 
 function sortLanesByElementals() {
 	var elementPriorities = [
-	s().m_rgPlayerTechTree.damage_multiplier_fire,
-	s().m_rgPlayerTechTree.damage_multiplier_water,
-	s().m_rgPlayerTechTree.damage_multiplier_air,
-	s().m_rgPlayerTechTree.damage_multiplier_earth
+	getScene().m_rgPlayerTechTree.damage_multiplier_fire,
+	getScene().m_rgPlayerTechTree.damage_multiplier_water,
+	getScene().m_rgPlayerTechTree.damage_multiplier_air,
+	getScene().m_rgPlayerTechTree.damage_multiplier_earth
 	];
 
-	var lanes = s().m_rgGameData.lanes;
+	var lanes = getScene().m_rgGameData.lanes;
 	var lanePointers = [];
 
 	for (var i = 0; i < lanes.length; i++) {
@@ -2106,7 +2407,7 @@ function sortLanesByElementals() {
 }
 
 function getCurrentTime() {
-	return s().m_rgGameData.timestamp;
+	return getScene().m_rgGameData.timestamp;
 }
 
 function advLog(msg, lvl) {
@@ -2115,75 +2416,75 @@ function advLog(msg, lvl) {
 	}
 }
 
-if(w.SteamDB_Minigame_Timer) {
-	w.clearInterval(w.SteamDB_Minigame_Timer);
+if(window.SteamDB_Minigame_Timer) {
+	window.clearInterval(window.SteamDB_Minigame_Timer);
 }
 
-w.SteamDB_Minigame_Timer = w.setInterval(function(){
-	if (w.g_Minigame
-		&& s().m_bRunning
-		&& s().m_rgPlayerTechTree
-		&& s().m_rgGameData) {
-		w.clearInterval(w.SteamDB_Minigame_Timer);
+window.SteamDB_Minigame_Timer = window.setInterval(function(){
+	if (window.g_Minigame
+		&& getScene().m_bRunning
+		&& getScene().m_rgPlayerTechTree
+		&& getScene().m_rgGameData) {
+		window.clearInterval(window.SteamDB_Minigame_Timer);
 	firstRun();
-	w.SteamDB_Minigame_Timer = w.setInterval(MainLoop, 1000);
+	window.SteamDB_Minigame_Timer = window.setInterval(MainLoop, 1000);
 }
 }, 1000);
 
 // reload page if game isn't fully loaded, regardless of autoRefresh setting
-w.setTimeout(function() {
+window.setTimeout(function() {
 	// m_rgGameData is 'undefined' if stuck at 97/97 or below
-	if (!w.g_Minigame
-		|| !w.g_Minigame.m_CurrentScene
-		|| !w.g_Minigame.m_CurrentScene.m_rgGameData) {
-		w.location.reload(true);
+	if (!window.g_Minigame
+		|| !window.g_Minigame.m_CurrentScene
+		|| !window.g_Minigame.m_CurrentScene.m_rgGameData) {
+		window.location.reload(true);
 }
 }, autoRefreshSecondsCheckLoadedDelay * 1000);
 
 appendBreadcrumbsTitleInfo();
 
 function enhanceTooltips() {
-	var trt_oldTooltip = w.fnTooltipUpgradeDesc;
+	var trt_oldTooltip = window.fnTooltipUpgradeDesc;
 
-	w.fnTooltipUpgradeDesc = function(context){
-		var $context = w.$J(context);
+	window.fnTooltipUpgradeDesc = function(context){
+		var $context = window.$J(context);
 		var desc = $context.data('desc');
 		var strOut = desc;
 		var multiplier = parseFloat( $context.data('multiplier') );
 		switch( $context.data('upgrade_type') ) {
 			case 2: // Type for click damage. All tiers.
 			strOut = trt_oldTooltip(context);
-			var currentCritMultiplier = s().m_rgPlayerTechTree.damage_multiplier_crit;
-			var currentCrit = s().m_rgPlayerTechTree.damage_per_click * currentCritMultiplier;
-			var newCrit = s().m_rgTuningData.player.damage_per_click * (s().m_rgPlayerTechTree.damage_per_click_multiplier + multiplier) * currentCritMultiplier;
-			strOut += '<br><br>Crit Click: ' + w.FormatNumberForDisplay( currentCrit ) + ' => ' + w.FormatNumberForDisplay( newCrit );
+			var currentCritMultiplier = getScene().m_rgPlayerTechTree.damage_multiplier_crit;
+			var currentCrit = getScene().m_rgPlayerTechTree.damage_per_click * currentCritMultiplier;
+			var newCrit = getScene().m_rgTuningData.player.damage_per_click * (getScene().m_rgPlayerTechTree.damage_per_click_multiplier + multiplier) * currentCritMultiplier;
+			strOut += '<br><br>Crit Click: ' + window.FormatNumberForDisplay( currentCrit ) + ' => ' + window.FormatNumberForDisplay( newCrit );
 			break;
 			case 7: // Lucky Shot's type.
-			var currentMultiplier = s().m_rgPlayerTechTree.damage_multiplier_crit;
+			var currentMultiplier = getScene().m_rgPlayerTechTree.damage_multiplier_crit;
 			var newMultiplier = currentMultiplier + multiplier;
-			var dps = s().m_rgPlayerTechTree.dps;
-			var clickDamage = s().m_rgPlayerTechTree.damage_per_click;
+			var dps = getScene().m_rgPlayerTechTree.dps;
+			var clickDamage = getScene().m_rgPlayerTechTree.damage_per_click;
 
 			strOut += '<br><br>You can have multiple crits in a second. The server combines them into one.';
 
-			strOut += '<br><br>Crit Percentage: ' + (s().m_rgPlayerTechTree.crit_percentage * 100).toFixed(1) + '%';
+			strOut += '<br><br>Crit Percentage: ' + (getScene().m_rgPlayerTechTree.crit_percentage * 100).toFixed(1) + '%';
 
 			strOut += '<br><br>Critical Damage Multiplier:';
 			strOut += '<br>Current: ' + ( currentMultiplier ) + 'x';
 			strOut += '<br>Next Level: ' + ( newMultiplier ) + 'x';
 
 			strOut += '<br><br>Damage with one crit:';
-			strOut += '<br>DPS: ' + w.FormatNumberForDisplay( currentMultiplier * dps ) + ' => ' + w.FormatNumberForDisplay( newMultiplier * dps );
-			strOut += '<br>Click: ' + w.FormatNumberForDisplay( currentMultiplier * clickDamage ) + ' => ' + w.FormatNumberForDisplay( newMultiplier * clickDamage );
-			strOut += '<br><br>Base Increased By: ' + w.FormatNumberForDisplay(multiplier) + 'x';
+			strOut += '<br>DPS: ' + window.FormatNumberForDisplay( currentMultiplier * dps ) + ' => ' + window.FormatNumberForDisplay( newMultiplier * dps );
+			strOut += '<br>Click: ' + window.FormatNumberForDisplay( currentMultiplier * clickDamage ) + ' => ' + window.FormatNumberForDisplay( newMultiplier * clickDamage );
+			strOut += '<br><br>Base Increased By: ' + window.FormatNumberForDisplay(multiplier) + 'x';
 			break;
 			case 9: // Boss Loot Drop's type
-			var bossLootChance = s().m_rgPlayerTechTree.boss_loot_drop_percentage * 100;
+			var bossLootChance = getScene().m_rgPlayerTechTree.boss_loot_drop_percentage * 100;
 
 			strOut += '<br><br>Boss Loot Drop Rate:';
 			strOut += '<br>Current: ' + bossLootChance.toFixed(0) + '%';
 			strOut += '<br>Next Level: ' + (bossLootChance + multiplier * 100).toFixed(0) + '%';
-			strOut += '<br><br>Base Increased By: ' + w.FormatNumberForDisplay(multiplier * 100) + '%';
+			strOut += '<br><br>Base Increased By: ' + window.FormatNumberForDisplay(multiplier * 100) + '%';
 			break;
 			default:
 			return trt_oldTooltip(context);
@@ -2192,12 +2493,12 @@ function enhanceTooltips() {
 		return strOut;
 	};
 
-	var trt_oldElemTooltip = w.fnTooltipUpgradeElementDesc;
-	w.fnTooltipUpgradeElementDesc = function (context) {
+	var trt_oldElemTooltip = window.fnTooltipUpgradeElementDesc;
+	window.fnTooltipUpgradeElementDesc = function (context) {
 		var strOut = trt_oldElemTooltip(context);
 
-		var $context = w.$J(context);
-		//var upgrades = s().m_rgTuningData.upgrades.slice(0);
+		var $context = window.$J(context);
+		//var upgrades = getScene().m_rgTuningData.upgrades.slice(0);
 		// Element Upgrade index 3 to 6
 		var idx = $context.data('type');
 		// Is the current tooltip for the recommended element?
@@ -2206,7 +2507,7 @@ function enhanceTooltips() {
 		if (isRecommendedElement){
 			strOut += "<br><br>This is your recommended element. Please upgrade this.";
 
-			if (w.enableElementLock){
+			if (window.enableElementLock){
 				strOut += "<br><br>Other elements are LOCKED to prevent accidentally upgrading.";
 			}
 
@@ -2219,7 +2520,7 @@ function enhanceTooltips() {
 }
 
 function getGameLevel() {
-	return s().m_rgGameData.level + 1;
+	return getScene().m_rgGameData.level + 1;
 }
 
 function countdown(time) {
@@ -2241,14 +2542,14 @@ function countdown(time) {
 }
 
 function expectedLevel(level) {
-	var time = Math.floor(s().m_nTime) % 86400;
+	var time = Math.floor(getScene().m_nTime) % 86400;
 	time = time - 16*3600;
 	if (time < 0) {
 		time = time + 86400;
 	}
 
 	var remaining_time = 86400 - time;
-	var passed_time = getCurrentTime() - s().m_rgGameData.timestamp_game_start;
+	var passed_time = getCurrentTime() - getScene().m_rgGameData.timestamp_game_start;
 	var expected_level = Math.floor(((level/passed_time)*remaining_time)+level);
 	var likely_level = Math.floor((expected_level - level)/Math.log(3))+ level;
 
@@ -2268,7 +2569,7 @@ function appendBreadcrumbsTitleInfo() {
 
 	element = document.createElement('span');
 	element.className = "bc_span bc_room";
-	element.textContent = 'Room ' + w.g_GameID;
+	element.textContent = 'Room ' + window.g_GameID;
 	breadcrumbs.appendChild(element);
 
 	element = document.createElement('span');
@@ -2300,6 +2601,88 @@ function appendBreadcrumbsTitleInfo() {
 	element.textContent = 'Wormhole Activity: 0';
 	breadcrumbs.appendChild(element);
 	ELEMENTS.WormholesJumped = element;
+	
+	if (typeof GM_info != 'undefined') {
+		element = document.createElement('span');
+		element.style.cssFloat = 'right';
+		element.style.color = '#D4E157';
+		element.style.textShadow = '1px 1px 0px rgba( 0, 0, 0, 0.3 )';
+		element.innerHTML = '<a target="_blank"  href="' + GM_info.script.namespace + '">' + GM_info.script.name + ' v' + GM_info.script.version + '</a>';
+		breadcrumbs.appendChild(element);
+	}
+}
+function subLong(x, y) {
+    var addLong = function(x, y) {
+        var s = '';
+        if (y.length > x.length) {
+            s = x;
+            x = y;
+            y = s;
+        }
+        s = (parseInt(x.slice(-9),10) + parseInt(y.slice(-9),10)).toString();
+        x = x.slice(0,-9); 
+        y = y.slice(0,-9);
+        if (s.length > 9) {
+            if (x === '') return s;
+            x = addLong(x, '1');
+            s = s.slice(1);
+        } else if (x.length) { while (s.length < 9) { s = '0' + s; } }
+        if (y === '') return x + s;
+        return addLong(x, y) + s; 
+    };
+	
+    var s;
+    s = (parseInt('1'+x.slice(-9),10) - parseInt(y.slice(-9),10)).toString(); 
+    x = x.slice(0,-9);
+    y = y.slice(0,-9);
+    if (s.length === 10 || x === '') {
+        s = s.slice(1);
+    } else { 
+        if (y.length) { y = addLong(y, '1'); } 
+        else { y = '1';}
+        if (x.length) { while (s.length < 9) { s = '0' + s; }}
+    }
+    if (y === '') { 
+        s = (x + s).replace(/^0+/,'');
+        return s;
+    }
+    return subLong(x, y) + s;
+}
+
+function getAccountId(id) {
+    return parseInt(subLong(''+id, '76561197960265728'));
+}
+
+function getUserName() {
+	if (g_Minigame.m_CurrentScene.m_rgPlayerNameCache) {
+		return g_Minigame.m_CurrentScene.m_rgPlayerNameCache[getAccountId(g_steamID)];
+	}
+	return "Unknown";
+}
+
+function addIRC() {
+	//Add in IRC link
+	$J("#info_block").append('<div id="irc_join">Join IRC channel</div>');
+	
+	$J("#irc_join").css({
+		"width": "232px",
+		"line-height": "30px",
+		"height": "30px",
+		"position": "relative",
+		"top": "-50px",
+		"left": "0px",
+		"margin": "auto",
+		"text-align": "center",
+		"z-index": "12",
+		"cursor": "pointer",
+		"border-radius": "5px",
+		"border": "2px solid white"
+	});
+	
+	$J("#irc_join").click(function(e) {
+		e.stopPropagation();
+		window.open('https://webchat.quakenet.org/?nick=' + getUserName() + '&channels=YeOldeWH','_blank'); // Cant seem to find a local storing in js of the players username, so lets just take it from the dropdown
+	});
 }
 
 function updateLevelInfoTitle(level)
@@ -2310,6 +2693,36 @@ function updateLevelInfoTitle(level)
 	ELEMENTS.ExpectedLevel.textContent = 'Level: ' + level + ', Levels/second: ' + levelsPerSec() + ', YOWHers: ' + (approxYOWHClients > 0 ? approxYOWHClients : '??');
 	ELEMENTS.RemainingTime.textContent = 'Remaining Time: ' + rem_time.hours + ' hours, ' + rem_time.minutes + ' minutes';
 	ELEMENTS.WormholesJumped.textContent = 'Wormhole Activity: ' + (skipsLastJump.toLocaleString ? skipsLastJump.toLocaleString() : skipsLastJump);
+}
+
+function abilityCooldown(abilityID) {
+	return g_Minigame.CurrentScene().GetCooldownForAbility(abilityID);
+}
+
+function abilityIsUnlocked(abilityID) {
+	if (abilityID <= ABILITIES.NAPALM)
+		return ((1 << abilityID) & g_Minigame.CurrentScene().m_rgPlayerTechTree.unlocked_abilities_bitfield) > 0;
+	else
+		return getAbilityItemQuantity(abilityID) > 0;
+}
+
+// thanks to /u/mouseasw for the base code: https://github.com/mouseas/steamSummerMinigame/blob/master/autoPlay.js
+function hasAbility(abilityID) {
+	// each bit in unlocked_abilities_bitfield corresponds to an ability.
+	// the above condition checks if the ability's bit is set or cleared. I.e. it checks if
+	// the player has purchased the specified ability.
+	return abilityIsUnlocked(abilityID) && abilityCooldown(abilityID) <= 0;
+}
+
+function getAbilityItemQuantity(abilityID) {
+	for (var i = 0; i < g_Minigame.CurrentScene().m_rgPlayerTechTree.ability_items.length; ++i) {
+		var abilityItem = g_Minigame.CurrentScene().m_rgPlayerTechTree.ability_items[i];
+
+		if (abilityItem.ability == abilityID)
+			return abilityItem.quantity;
+	}
+
+	return 0;
 }
 
 }(window));
