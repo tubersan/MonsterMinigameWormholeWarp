@@ -249,8 +249,9 @@ function firstRun() {
 		// Page content
 		".pagecontent {padding: 0}",
 		// Align abilities to the left
-		"#abilitiescontainer {text-align: left; padding-left: 10px;}",
+		"#abilitiescontainer {text-align: left;}",
 		// Activitylog and ability list
+		"#activeinlanecontainer {padding-left: 10px;}",
 		"#activeinlanecontainer:hover {height: auto; background-image: radial-gradient(circle farthest-corner at 32px 0px, rgba(0,124,182,0.1), #11111C); padding-bottom: 10px; position:absolute; z-index: 1;}",
 		"#activeinlanecontainer:hover + #activitylog {margin-top: 88px;}",
 		"#activitylog {margin-top: 20px}",
@@ -277,7 +278,9 @@ function firstRun() {
 		".bc_level {color: #FFA07A;}",
 		".bc_time {color: #9AC0FF;}",
 		".bc_worms {color: #FFF79A;}",
-		// Upgrades and abilities are hard to see on new background
+		// Adjustments for hard to see areas on the new background
+		"#upgradesscroll, #activityscroll {opacity: 0.75;}",
+		".teamhealth {background: rgba( 240, 240, 255, 0.2 );}",
 		"#upgrades .title_upgrates {color: #67C;}",
 		// Always show ability count
 		".abilitytemplate > a > .abilityitemquantity {visibility: visible; pointer-events: none;}",
