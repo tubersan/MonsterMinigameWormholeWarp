@@ -371,7 +371,7 @@ function firstRun() {
 	ELEMENTS.PlayersInGame = document.getElementById("players_in_game");
 
 	enhanceTooltips();
-	addIRCLink();
+	addIRC();
 	addExtraUI();
 
 	//Enable Pointer
@@ -807,7 +807,7 @@ function MainLoop() {
 		
 		if( level !== lastLevel ) {
 			// Clear any unsent abilities still in the queue when our level changes
-			s().m_rgAbilityQueue.clear();
+			getScene().m_rgAbilityQueue.clear();
 			// update skips if applicable
 			if (updateSkips) {
 				skipsLastJump = level - lastLevel;
@@ -2582,7 +2582,7 @@ function getUserName() {
 	return "Unknown";
 }
 
-function addIRCLink() {
+function addIRC() {
 	//Add in IRC link
 	$J("#info_block").append('<div id="irc_join">Join IRC channel</div>');
 	
