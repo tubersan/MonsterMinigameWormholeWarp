@@ -181,6 +181,8 @@ var GAME_STATUS = {
 	OVER: 3
 };
 
+var wormholesUsedOnLevel = 0;
+
 // Try to disable particles straight away,
 // if not yet available, they will be disabled in firstRun
 disableParticles();
@@ -409,6 +411,10 @@ var localUpdateLog = function( rgLaneLog ) {
 					this.m_eleUpdateLogContainer[0].insertBefore(ele[0], this.m_eleUpdateLogContainer[0].firstChild);
 				
 					advLog(rgEntry.actor_name + " used " + s().m_rgTuningData.abilities[ rgEntry.ability ].name + " on level " + level, 1);
+
+					if(rgEntry.ability == ABILITIES.WORMHOLE) {
+						wormholesUsedOnLevel++;
+					}
 				}
 				break;
 			default:
@@ -525,6 +531,8 @@ function MainLoop() {
 				skipsLastJump = level - lastLevel;
 				updateSkips = false;
 			}
+
+			wormholesUsedOnLevel = 0;
 		}
 
 		if (level % 100 == 0) {
@@ -605,18 +613,25 @@ function MainLoop() {
 
 			absoluteCurrentClickRate = level > CONTROL.speedThreshold && (levelRainingMod === 0 || 3 >= (CONTROL.rainingRounds - levelRainingMod)) ? 0 : currentClickRate;
 
-			// throttle back as we approach
-			for(var i = 1; i <= 3; i++) {
-				if(levelRainingMod > CONTROL.rainingRounds - i) {
-					absoluteCurrentClickRate = Math.round(absoluteCurrentClickRate / 10);
+			var wormholesOnLine = getActiveAbilityLaneCount(ABILITIES.WORMHOLE);
+			var levelsUntilBoss = (CONTROL.rainingRounds - (level % CONTROL.rainingRounds));
+			if(levelsUntilBoss < 10 && (wormholesOnLine > levelsUntilBoss || wormholesUsedOnLevel > levelsUntilBoss)) {
+				advLog("Too much wormholes for throttle back. WH: " + wormholesOnLine + " / "+ wormholesUsedOnLevel+" > lvl: " + levelsUntilBoss, 4);
+				absoluteCurrentClickRate = currentClickRate;
+			}
+			else {
+				// throttle back as we approach
+				for(var i = 1; i <= 3; i++) {
+					if(levelRainingMod > CONTROL.rainingRounds - i) {
+						absoluteCurrentClickRate = Math.round(absoluteCurrentClickRate / 10);
+					}
+				}
+
+				if (levelsUntilBoss < 5 && Math.random < (0.9 / levelsUntilBoss)){
+					absoluteCurrentClickRate = clicksOnBossLevel;
 				}
 			}
 
-			var levelsUntilBoss = (CONTROL.rainingRounds - (level % CONTROL.rainingRounds))
-			if (levelsUntilBoss < 5 && Math.random < (0.9 / levelsUntilBoss)){
-				absoluteCurrentClickRate = clicksOnBossLevel;
-			}
-			
 			//If at the boss level, dont click at all
 			if (level % CONTROL.rainingRounds == 0) {
 				absoluteCurrentClickRate = clicksOnBossLevel;
