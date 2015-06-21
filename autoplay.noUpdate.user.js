@@ -2064,7 +2064,7 @@ function triggerAbility(abilityId) {
 			}
 		},
 		function() {
-			console.log('lost a wormhole :(');
+			advLog('lost a wormhole :(', 2);
 		}, {requested_abilities: [{ability: ABILITIES.WORMHOLE}]});
 	} else {
 		s().m_rgAbilityQueue.push({'ability': abilityId});
