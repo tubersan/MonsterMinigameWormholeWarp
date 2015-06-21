@@ -374,11 +374,41 @@ function firstRun() {
 	lock_elements_box.appendChild(lock_elements_checkbox);
 	ab_box.appendChild(lock_elements_box);
 	
-	//Smack the TV Easter Egg		
-	$J('<div style="cursor: pointer; transition: linear 100ms; opacity: 0.1; height: 52px; position: absolute; bottom: 85px; left: 828px; z-index: 12;" onmouseenter="this.style.opacity = 1" onmouseleave="this.style.opacity = 0.1" onclick="SmackTV();"><br><br><span style="font-size:10px; padding: 12px; color: gold;">Smack TV</span></div>').insertBefore('#row_bottom');
-
-	// Easter egg
-	$J('<a onclick="SmackTV();return false;" style="position:absolute;left:830px;z-index:99;top:584px;"><div style="width:98px;height:52px;"></div></a>').insertAfter($J('.tv_ui'));
+        //Smack the TV Easter Egg
+        $J('#gamecontainer').append('<div id="tvsmacker" style="position: absolute; top: 360px; right: 640px; bottom: 360px; left: 640px;"></div>').append('<style>'
+                + 'div#tvsmacker::before, div#tvsmacker::after {'
+                + '     content: "Smack TV";'
+                + '     color: orange;'
+                + '     line-height: 45px;'
+                + '     font-size: 14px;'
+                + '     font-family: "Press Start 2P", "Lucida Console", Consolas, Arial;'
+                + '     display: block;'
+                + '     cursor: -moz-grab;'
+                + '     cursor: -webkit-grab;'
+                + '     cursor: grab;'
+                + '     width: 720px;'
+                + '     height: 45px;'
+                + '     text-align: center;'
+                + '     margin-top: -10px;'
+                + '     margin-bottom: 10px;'
+                + '     transition: linear 0.1s;'
+                + '}'
+                + 'div#tvsmacker::before {'
+                + '     margin-left: 270px;'
+                + '     transform: rotate(90deg);'
+                + '}'
+                + 'div#tvsmacker::after {'
+                + '     margin-left: -990px;'
+                + '     transform: rotate(270deg);'
+                + '}'
+                + 'div#tvsmacker:hover::before {'
+                + '     margin-left: 290px;'
+                + '}'
+                + 'div#tvsmacker:hover::after {'
+                + '     margin-left: -1010px;'
+                + '}'
+                + '</style>');
+        $J('#tvsmacker').click(function () { SmackTV(); });
 
 	enhanceTooltips();
 
