@@ -291,6 +291,7 @@ function firstRun() {
 		// Always show ability count
 		".abilitytemplate > a > .abilityitemquantity {visibility: visible; pointer-events: none;}",
 		".tv_ui {background-image: url(http://i.imgur.com/vM1gTFY.gif);}",
+		"#Chen {position: absolute; bottom: 0px; left: 770px; width: 286px; height: 250px; background-image: url(//i.imgur.com/xMbQChA.png); }",
 		""
 	];
 	styleNode.textContent = styleText.join("");
@@ -552,8 +553,12 @@ function MainLoop() {
 			}
 
 			updateSkips = true;
+
+			// GoGo Chen
+			honkingIntenstifys(true);
 		} else {
 			goToLaneWithBestTarget(level);
+			honkingIntenstifys(false);
 		}
 
 		attemptRespawn();
@@ -1245,12 +1250,43 @@ function toggleChen(event) {
 	enableChen = value;
 
 	if (enableChen) {
+		addChen();
+		honkingIntenstifys(isBossLevel(getGameLevel()));
+
 		oldTvBg = w.$J('.tv_ui').css('background-image');
-		w.$J('.tv_ui').css('background-image', 'url(//i.imgur.com/QNSzdlS.png)');
+		w.$J('.tv_ui').css('background-image', 'url(//i.imgur.com/9wmTsxr.png)');
 	} else {
 		w.$J('.tv_ui').css('background-image', oldTvBg);
+
+		honkingIntenstifys(false);
 	}
 
+}
+
+function addChen() {
+	var chenDiv = document.querySelector("#Chen");
+
+	if (!chenDiv) { // We can only handle one Chen D:
+		var chenHTML = document.createElement('div');
+		chenHTML.id = "Chen";
+		document.querySelector("#uicontainer > div.tv_ui").appendChild(chenHTML);
+	}
+}
+
+function honkingIntenstifys(isBoss, hide) {
+	var chenDiv = document.querySelector("#Chen");
+
+	if (chenDiv && enableChen && isBoss) {
+		chenDiv.style.backgroundImage = "url(//i.imgur.com/eGnE1cD.gif)";
+	} else if (chenDiv && enableChen) {
+		chenDiv.style.backgroundImage = "url(//i.imgur.com/xMbQChA.png)";
+	}
+
+	if (chenDiv && !enableChen) {
+		chenDiv.style.visibility = "hidden";
+	} else {
+		chenDiv.style.visibility = "visible";
+	}
 }
 
 function autoRefreshPage(autoRefreshMinutes){
