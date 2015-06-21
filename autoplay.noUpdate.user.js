@@ -1284,7 +1284,7 @@ function honkingIntenstifys(isBoss, hide) {
 
 	if (chenDiv && !enableChen) {
 		chenDiv.style.visibility = "hidden";
-	} elseif (chenDiv) {
+	} else if (chenDiv) {
 		chenDiv.style.visibility = "visible";
 	}
 }
