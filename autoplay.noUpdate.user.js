@@ -369,6 +369,9 @@ function firstRun() {
 	var lock_elements_checkbox = makeCheckBox("enableElementLock", "Lock element upgrades for more team dps", enableElementLock, toggleElementLock, false);
 	lock_elements_box.appendChild(lock_elements_checkbox);
 	ab_box.appendChild(lock_elements_box);
+	
+	//Smack the TV Easter Egg		
+	$J('<div style="cursor: pointer; transition: linear 100ms; opacity: 0.1; height: 52px; position: absolute; bottom: 85px; left: 828px; z-index: 12;" onmouseenter="this.style.opacity = 1" onmouseleave="this.style.opacity = 0.1" onclick="SmackTV();"><br><br><span style="font-size:10px; padding: 12px; color: gold;">Smack TV</span></div>').insertBefore('#row_bottom');
 
 	enhanceTooltips();
 
