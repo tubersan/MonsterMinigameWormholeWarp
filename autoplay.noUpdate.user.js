@@ -845,6 +845,10 @@ function useAbilitiesAt100() {
 
 	if (wormholeOn100 && !w.SteamDB_Wormhole_Timer) {
 		advLog("At level % 100 = 0, forcing the use of wormholes nonstop", 2);
+
+		// Fire one off now, so we don't wait the interval
+		if (bHaveItem(ABILITIES.WORMHOLE)) triggerAbility(ABILITIES.WORMHOLE);
+
 		w.SteamDB_Wormhole_Timer = w.setInterval(function(){
 			if (getGameLevel() % 100 !== 0) {
 				// We're not on a *00 level anymore, stop!!
@@ -2031,7 +2035,15 @@ function tryUsingAbility(itemId, checkInLane, forceAbility) {
 function triggerAbility(abilityId) {
 	if (abilityId === ABILITIES.WORMHOLE) {
 		// Fire this bad boy off immediately 
-		g_Server.UseAbilities($J.noop, $J.noop, {requested_abilities: [{ability: ABILITIES.WORMHOLE}]});
+		g_Server.UseAbilities(function() {
+			var wormholeButton = s().m_rgPlayerTechTree.ability_items.filter(function(item) { return item.ability === 26; })[0];
+			if (wormholeButton) {
+				wormholeButton.quantity--;
+			}
+		},
+		function() {
+			console.log('lost a wormhole :(');
+		}, {requested_abilities: [{ability: ABILITIES.WORMHOLE}]});
 	} else {
 		s().m_rgAbilityQueue.push({'ability': abilityId});
 	}
