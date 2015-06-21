@@ -372,6 +372,9 @@ function firstRun() {
 	lock_elements_box.appendChild(lock_elements_checkbox);
 	ab_box.appendChild(lock_elements_box);
 
+	// Easter egg
+	$J('<a onclick="SmackTV();return false;" style="position:absolute;left:830px;z-index:99;top:584px;"><div style="width:98px;height:52px;"></div></a>').insertAfter($J('.tv_ui'));
+
 	enhanceTooltips();
 
 	isPastFirstRun = true;
