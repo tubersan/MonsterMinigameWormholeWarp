@@ -1615,7 +1615,7 @@ function toggleAllText(event) {
 }
 
 function toggleTrackTroll() {
-	var value = enableTrackTroll = !enableTrollTrack;
+	var value = enableTrollTrack = !enableTrollTrack;
 	
 	updateToggle("trollTracker", value);
 }
