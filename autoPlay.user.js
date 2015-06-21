@@ -2,10 +2,10 @@
 // @name Ye Olde Megajump (Auto-updating)
 // @namespace https://github.com/YeOldeWH/MonsterMinigameWormholeWarp
 // @description A script that runs the Steam Monster Minigame for you.  Now with megajump.  Brought to you by the Ye Olde Wormhole Schemers and DannyDaemonic
-// @version 6.0.0
+// @version 5.0.2
 // @match *://steamcommunity.com/minigame/towerattack*
 // @match *://steamcommunity.com//minigame/towerattack*
-// @grant GM_xmlhttpRequest
+// @grant       GM_xmlhttpRequest
 // @updateURL https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/master/autoPlay.user.js
 // @downloadURL https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/master/autoPlay.user.js
 // ==/UserScript==
