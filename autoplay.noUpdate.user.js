@@ -621,14 +621,8 @@ function MainLoop() {
 			}
 			else {
 				// throttle back as we approach
-				for(var i = 1; i <= 3; i++) {
-					if(levelRainingMod > CONTROL.rainingRounds - i) {
-						absoluteCurrentClickRate = Math.round(absoluteCurrentClickRate / 10);
-					}
-				}
-
-				if (levelsUntilBoss < 5 && Math.random < (0.9 / levelsUntilBoss)){
-					absoluteCurrentClickRate = clicksOnBossLevel;
+				if(levelsUntilBoss < 5) {
+					absoluteCurrentClickRate = Math.round(currentClickRate * 0.1 * levelsUntilBoss);
 				}
 			}
 
