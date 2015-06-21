@@ -369,6 +369,42 @@ function firstRun() {
 	var lock_elements_checkbox = makeCheckBox("enableElementLock", "Lock element upgrades for more team dps", enableElementLock, toggleElementLock, false);
 	lock_elements_box.appendChild(lock_elements_checkbox);
 	ab_box.appendChild(lock_elements_box);
+	
+	//Smack the TV Easter Egg
+	$J('#gamecontainer').append('<div id="tvsmacker" style="position: absolute; top: 360px; right: 640px; bottom: 360px; left: 640px;"></div>').append('<style>'
+		+ 'div#tvsmacker::before, div#tvsmacker::after {'
+		+ '	content: "Smack TV";'
+		+ '	color: orange;'
+		+ '	line-height: 45px;'
+		+ '	font-size: 14px;'
+		+ '	font-family: "Press Start 2P", "Lucida Console", Consolas, Arial;'
+		+ '	display: block;'
+		+ '	cursor: -moz-grab;'
+		+ '	cursor: -webkit-grab;'
+		+ '	cursor: grab;'
+		+ '	width: 720px;'
+		+ '	height: 45px;'
+		+ '	text-align: center;'
+		+ '	margin-top: -10px;'
+		+ '	margin-bottom: 10px;'
+		+ '	transition: linear 0.1s;'
+		+ '}'
+		+ 'div#tvsmacker::before {'
+		+ '	margin-left: 270px;'
+		+ '	transform: rotate(90deg);'
+		+ '}'
+		+ 'div#tvsmacker::after {'
+		+ '	margin-left: -990px;'
+		+ '	transform: rotate(270deg);'
+		+ '}'
+		+ 'div#tvsmacker:hover::before {'
+		+ '	margin-left: 290px;'
+		+ '}'
+		+ 'div#tvsmacker:hover::after {'
+		+ '	margin-left: -1010px;'
+		+ '}'
+		+ '</style>');
+	$J('#tvsmacker').click(function () { SmackTV(); });
 
 	enhanceTooltips();
 
