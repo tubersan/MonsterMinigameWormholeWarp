@@ -623,7 +623,7 @@ function MainLoop() {
 				// throttle back as we approach
 				for(var i = 1; i <= 3; i++) {
 					if(levelRainingMod > CONTROL.rainingRounds - i) {
-						absoluteCurrentClickRate = Math.round(absoluteCurrentClickRate / 10);
+						absoluteCurrentClickRate = Math.round(absoluteCurrentClickRate / 2);
 					}
 				}
 
