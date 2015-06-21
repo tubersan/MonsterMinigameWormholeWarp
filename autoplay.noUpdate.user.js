@@ -2,7 +2,7 @@
 // @name Ye Olde Megajump
 // @namespace https://github.com/YeOldeWH/MonsterMinigameWormholeWarp
 // @description A script that runs the Steam Monster Minigame for you.  Now with megajump.  Brought to you by the Ye Olde Wormhole Schemers and DannyDaemonic
-// @version 7.1.2
+// @version 7.0.3
 // @match *://steamcommunity.com/minigame/towerattack*
 // @match *://steamcommunity.com//minigame/towerattack*
 // @grant none
@@ -180,6 +180,8 @@ var GAME_STATUS = {
 	RUNNING: 2,
 	OVER: 3
 };
+
+var wormholesUsedOnLevel = 0;
 
 // Try to disable particles straight away,
 // if not yet available, they will be disabled in firstRun
@@ -375,6 +377,9 @@ function firstRun() {
 	//Smack the TV Easter Egg		
 	$J('<div style="cursor: pointer; transition: linear 100ms; opacity: 0.1; height: 52px; position: absolute; bottom: 85px; left: 828px; z-index: 12;" onmouseenter="this.style.opacity = 1" onmouseleave="this.style.opacity = 0.1" onclick="SmackTV();"><br><br><span style="font-size:10px; padding: 12px; color: gold;">Smack TV</span></div>').insertBefore('#row_bottom');
 
+	// Easter egg
+	$J('<a onclick="SmackTV();return false;" style="position:absolute;left:830px;z-index:99;top:584px;"><div style="width:98px;height:52px;"></div></a>').insertAfter($J('.tv_ui'));
+
 	enhanceTooltips();
 
 	isPastFirstRun = true;
@@ -414,6 +419,10 @@ var localUpdateLog = function( rgLaneLog ) {
 					this.m_eleUpdateLogContainer[0].insertBefore(ele[0], this.m_eleUpdateLogContainer[0].firstChild);
 				
 					advLog(rgEntry.actor_name + " used " + s().m_rgTuningData.abilities[ rgEntry.ability ].name + " on level " + level, 1);
+
+					if(rgEntry.ability == ABILITIES.WORMHOLE) {
+						wormholesUsedOnLevel++;
+					}
 				}
 				break;
 			default:
@@ -530,6 +539,8 @@ function MainLoop() {
 				skipsLastJump = level - lastLevel;
 				updateSkips = false;
 			}
+
+			wormholesUsedOnLevel = 0;
 		}
 
 		if (level % 100 == 0) {
@@ -614,18 +625,19 @@ function MainLoop() {
 
 			absoluteCurrentClickRate = level > CONTROL.speedThreshold && (levelRainingMod === 0 || 3 >= (CONTROL.rainingRounds - levelRainingMod)) ? 0 : currentClickRate;
 
-			// throttle back as we approach
-			for(var i = 1; i <= 3; i++) {
-				if(levelRainingMod > CONTROL.rainingRounds - i) {
-					absoluteCurrentClickRate = Math.round(absoluteCurrentClickRate / 10);
+			var wormholesOnLine = getActiveAbilityLaneCount(ABILITIES.WORMHOLE);
+			var levelsUntilBoss = (CONTROL.rainingRounds - (level % CONTROL.rainingRounds));
+			if(levelsUntilBoss < 10 && (wormholesOnLine > levelsUntilBoss || wormholesUsedOnLevel > levelsUntilBoss)) {
+				advLog("Too much wormholes for throttle back. WH: " + wormholesOnLine + " / "+ wormholesUsedOnLevel+" > lvl: " + levelsUntilBoss, 4);
+				absoluteCurrentClickRate = currentClickRate;
+			}
+			else {
+				// throttle back as we approach
+				if(levelsUntilBoss < 5) {
+					absoluteCurrentClickRate = Math.round(currentClickRate * 0.1 * levelsUntilBoss);
 				}
 			}
 
-			var levelsUntilBoss = (CONTROL.rainingRounds - (level % CONTROL.rainingRounds))
-			if (levelsUntilBoss < 5 && Math.random < (0.9 / levelsUntilBoss)){
-				absoluteCurrentClickRate = clicksOnBossLevel;
-			}
-			
 			//If at the boss level, dont click at all
 			if (level % CONTROL.rainingRounds == 0) {
 				absoluteCurrentClickRate = clicksOnBossLevel;
@@ -839,6 +851,10 @@ function useAbilitiesAt100() {
 
 	if (wormholeOn100 && !w.SteamDB_Wormhole_Timer) {
 		advLog("At level % 100 = 0, forcing the use of wormholes nonstop", 2);
+
+		// Fire one off now, so we don't wait the interval
+		if (bHaveItem(ABILITIES.WORMHOLE)) triggerAbility(ABILITIES.WORMHOLE);
+
 		w.SteamDB_Wormhole_Timer = w.setInterval(function(){
 			if (getGameLevel() % 100 !== 0) {
 				// We're not on a *00 level anymore, stop!!
@@ -847,7 +863,29 @@ function useAbilitiesAt100() {
 				return;
 			}
 			if (bHaveItem(ABILITIES.WORMHOLE)) triggerAbility(ABILITIES.WORMHOLE); //wormhole
-		}, 1000); //SLOW DOWN. 100ms trigger is causing server to ignore client, primary cause of client desync.
+		}, 100);
+		/*  ^ DO NOT TOUCH THIS. The fundamental idea of this strat is that we get as many wormhole
+		  jumps in as we can when we hit a boss level. The server seems capable of taking a max of ~10wh/s
+		  feel free to use the following (hasty) code to manually verify in console:
+
+		  // 1. Note down number of remaining wormholes
+		  var dateStart = Date.now(); var interval = setInterval(function() { g_Server.UseAbilities($J.noop, $J.noop, {requested_abilities: [{ability: 26}]}); }, 100);
+		 
+		  // 2. Count 10 roughly 10 mississippi's (or however long you want), you will get the exact time taken between start and stop
+		  clearInterval(interval); console.log("Time: ", (dateStop - dateStart) / 1000);
+		  // => 13.002
+		  
+		  // 3. Click on any ability that can be used to refresh the abilities table from the server
+		  
+		  // 4. Subtract the old wormhole count from the new wormhole count and divide by the time taken to get wh/s
+
+		  Generally wh/s will be somewhere between 2-8 - I've never seen it go higher than 9.5, hence the 100ms resolution.
+		  Changing this to 50ms will not give you 20 wh/s.
+		  Changing this to 1000ms will leave wormholes on the table, so to speak.
+
+		  Yes, there will be overflow, but this a GOOD thing. a few wormholes that overflow and get us *closer* to the
+		  next level x00 boss helps!
+		 */
 	}
 	
 	//This should equate to approximately 1.8 Like News per second
@@ -2024,6 +2062,7 @@ function tryUsingAbility(itemId, checkInLane, forceAbility) {
 	}
 
 	var level = getGameLevel();
+	var levelsPer = levelsPerSec();
 	var needs_to_be_blocked = false;
 	var two_digit_level = level % 100;
 
@@ -2032,12 +2071,18 @@ function tryUsingAbility(itemId, checkInLane, forceAbility) {
 	// must not use any damaging ability on boss levels
 	if (two_digit_level == 0 && needs_to_be_blocked) {
 		return false;
+	}
+
+	// don't let good luck charm run up to x100 levels
+	if (itemId === ABILITIES.GOOD_LUCK_CHARMS && two_digit_level + levelsPer * 20 > 100) {
+		return false;
+	}
 
 	// Randomly Don't use this ability when we're getting close to the boss
 	// This avoids overflow damage 
-	} else if (two_digit_level > 50 && needs_to_be_blocked) {
+	if (two_digit_level > 50 && needs_to_be_blocked) {
 		// Calculate current ability usage rate
-		var nextTickLevel = Math.ceil(level + levelsPerSec());
+		var nextTickLevel = Math.ceil(level + levelsPer);
 		var nextWHLevel = Math.ceil(nextTickLevel / 100)*100;
 		var abilityRate = Math.min( 1, Math.sqrt( nextWHLevel - nextTickLevel )/10 + minAbilityUsePercent );
 
@@ -2055,7 +2100,15 @@ function tryUsingAbility(itemId, checkInLane, forceAbility) {
 function triggerAbility(abilityId) {
 	if (abilityId === ABILITIES.WORMHOLE) {
 		// Fire this bad boy off immediately 
-		g_Server.UseAbilities($J.noop, $J.noop, {requested_abilities: [{ability: ABILITIES.WORMHOLE}]});
+		g_Server.UseAbilities(function() {
+			var wormholeButton = s().m_rgPlayerTechTree.ability_items.filter(function(item) { return item.ability === 26; })[0];
+			if (wormholeButton) {
+				wormholeButton.quantity--;
+			}
+		},
+		function() {
+			advLog('lost a wormhole :(', 2);
+		}, {requested_abilities: [{ability: ABILITIES.WORMHOLE}]});
 	} else {
 		s().m_rgAbilityQueue.push({'ability': abilityId});
 	}
