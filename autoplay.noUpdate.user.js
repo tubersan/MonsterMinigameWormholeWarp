@@ -857,7 +857,29 @@ function useAbilitiesAt100() {
 				return;
 			}
 			if (bHaveItem(ABILITIES.WORMHOLE)) triggerAbility(ABILITIES.WORMHOLE); //wormhole
-		}, 1000); //SLOW DOWN. 100ms trigger is causing server to ignore client, primary cause of client desync.
+		}, 100);
+		/*  ^ DO NOT TOUCH THIS. The fundamental idea of this strat is that we get as many wormhole
+		  jumps in as we can when we hit a boss level. The server seems capable of taking a max of ~10wh/s
+		  feel free to use the following (hasty) code to manually verify in console:
+
+		  // 1. Note down number of remaining wormholes
+		  var dateStart = Date.now(); var interval = setInterval(function() { g_Server.UseAbilities($J.noop, $J.noop, {requested_abilities: [{ability: 26}]}); }, 100);
+		 
+		  // 2. Count 10 roughly 10 mississippi's (or however long you want), you will get the exact time taken between start and stop
+		  clearInterval(interval); console.log("Time: ", (dateStop - dateStart) / 1000);
+		  // => 13.002
+		  
+		  // 3. Click on any ability that can be used to refresh the abilities table from the server
+		  
+		  // 4. Subtract the old wormhole count from the new wormhole count and divide by the time taken to get wh/s
+
+		  Generally wh/s will be somewhere between 2-8 - I've never seen it go higher than 9.5, hence the 100ms resolution.
+		  Changing this to 50ms will not give you 20 wh/s.
+		  Changing this to 1000ms will leave wormholes on the table, so to speak.
+
+		  Yes, there will be overflow, but this a GOOD thing. a few wormholes that overflow and get us *closer* to the
+		  next level x00 boss helps!
+		 */
 	}
 	
 	//This should equate to approximately 1.8 Like News per second
