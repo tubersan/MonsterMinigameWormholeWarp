@@ -1978,6 +1978,7 @@ function tryUsingAbility(itemId, checkInLane, forceAbility) {
 	}
 
 	var level = getGameLevel();
+	var levelsPer = levelsPerSec();
 	var needs_to_be_blocked = false;
 	var two_digit_level = level % 100;
 
@@ -1987,11 +1988,16 @@ function tryUsingAbility(itemId, checkInLane, forceAbility) {
 	if (two_digit_level == 0 && needs_to_be_blocked) {
 		return false;
 
+	// don't let good luck charm run up to x100 levels
+	if (itemId === ABILITIES.GOOD_LUCK_CHARMS && two_digit_level + levelsPer * 20 >= 99) {
+		return false;
+	}
+
 	// Randomly Don't use this ability when we're getting close to the boss
 	// This avoids overflow damage 
 	} else if (two_digit_level > 50 && needs_to_be_blocked) {
 		// Calculate current ability usage rate
-		var nextTickLevel = Math.ceil(level + levelsPerSec());
+		var nextTickLevel = Math.ceil(level + levelsPer);
 		var nextWHLevel = Math.ceil(nextTickLevel / 100)*100;
 		var abilityRate = Math.min( 1, Math.sqrt( nextWHLevel - nextTickLevel )/10 + minAbilityUsePercent );
 
