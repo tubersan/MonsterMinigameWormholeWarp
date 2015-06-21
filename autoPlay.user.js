@@ -6,8 +6,8 @@
 // @match *://steamcommunity.com/minigame/towerattack*
 // @match *://steamcommunity.com//minigame/towerattack*
 // @grant GM_xmlhttpRequest
-// @updateURL https://github.com/YeOldeWH/MonsterMinigameWormholeWarp/raw/master/autoPlay.user.js
-// @downloadURL https://github.com/YeOldeWH/MonsterMinigameWormholeWarp/raw/master/autoPlay.user.js
+// @updateURL https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/master/autoPlay.user.js
+// @downloadURL https://raw.githubusercontent.com/YeOldeWH/MonsterMinigameWormholeWarp/master/autoPlay.user.js
 // ==/UserScript==
 
 (function(x) {
